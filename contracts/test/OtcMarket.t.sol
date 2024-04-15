@@ -79,7 +79,7 @@ contract OtcMarketTest is WormholeRelayerBasicTest, IERC20Errors {
         emit IOtcMarket.OfferReceived(offerId);
 
         vm.selectFork(sourceFork);
-        performDelivery(true);
+        performDelivery();
 
         vm.selectFork(targetFork);
         (
@@ -159,11 +159,11 @@ contract OtcMarketTest is WormholeRelayerBasicTest, IERC20Errors {
     }
 
     function testCreateOffer_UnsupportedChain() public {
-        uint256 cost = sourceOtcMarket.quoteCrossChainDelivery(6);
+        uint256 cost = sourceOtcMarket.quoteCrossChainDelivery(sourceChain);
 
-        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.UnsupportedChain.selector, 6));
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.UnsupportedChain.selector, sourceChain));
         sourceOtcMarket.createOffer{value: cost}(
-            6,
+            sourceChain,
             address(this),
             address(sourceToken),
             address(targetToken),
@@ -177,6 +177,44 @@ contract OtcMarketTest is WormholeRelayerBasicTest, IERC20Errors {
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InsufficientValue.selector, 0, cost));
         sourceOtcMarket.createOffer{value: 0}(
+            targetChain,
+            address(this),
+            address(sourceToken),
+            address(targetToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+    }
+
+    function _createOffer() private {
+        uint256 cost = sourceOtcMarket.quoteCrossChainDelivery(targetChain);
+        sourceToken.approve(address(sourceOtcMarket), AMOUNT);
+        sourceOtcMarket.createOffer{value: cost}(
+            targetChain,
+            address(this),
+            address(sourceToken),
+            address(targetToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+    }
+
+    function testCreateOffer_OfferAlreadyExists() public {
+        _createOffer();
+
+        uint256 offerId = sourceOtcMarket.hashOffer(
+            address(this),
+            sourceChain,
+            targetChain,
+            address(sourceToken),
+            address(targetToken),
+            EXCHANGE_RATE
+        );
+        uint256 cost = sourceOtcMarket.quoteCrossChainDelivery(targetChain);
+        sourceToken.approve(address(sourceOtcMarket), AMOUNT);
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.OfferAlreadyExists.selector, offerId));
+        sourceOtcMarket.createOffer{value: cost}(
             targetChain,
             address(this),
             address(sourceToken),
