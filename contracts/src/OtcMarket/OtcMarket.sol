@@ -13,7 +13,6 @@ import {IOtcMarket} from "./IOtcMarket.sol";
 
 contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
     uint256 public constant GAS_LIMIT = 100_000_000;
-    uint256 public tradingFee;
 
     uint16 public immutable chain;
     IWormholeRelayer public immutable wormholeRelayer;
@@ -39,7 +38,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
     }
 
     function hashOffer(
-        address seller,
+        address sellerSourceAddress,
         uint16 sourceChain,
         uint16 targetChain,
         address sourceTokenAddress,
@@ -49,8 +48,8 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         return
             uint256(
                 keccak256(
-                    abi.encodePacked(
-                        seller,
+                    abi.encode(
+                        sellerSourceAddress,
                         sourceChain,
                         targetChain,
                         sourceTokenAddress,
@@ -59,6 +58,57 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
                     )
                 )
             );
+    }
+
+    function createOffer(
+        uint16 targetChain,
+        address sellerTargetAddress,
+        address sourceTokenAddress,
+        address targetTokenAddress,
+        uint256 sourceTokenAmount,
+        uint256 exchangeRate
+    ) public payable virtual override returns (uint256 newOfferId) {
+        uint256 cost = quoteCrossChainDelivery(targetChain);
+        _validateOfferParams(targetChain, sourceTokenAmount, exchangeRate, cost);
+
+        address sellerSourceAddress = msg.sender;
+
+        newOfferId = hashOffer(
+            sellerSourceAddress,
+            chain,
+            targetChain,
+            sourceTokenAddress,
+            targetTokenAddress,
+            exchangeRate
+        );
+        if (offers[newOfferId].sellerSourceAddress != address(0)) {
+            revert OfferAlreadyExists(newOfferId);
+        }
+
+        offers[newOfferId] = Offer(
+            sellerSourceAddress,
+            sellerTargetAddress,
+            chain,
+            targetChain,
+            sourceTokenAddress,
+            targetTokenAddress,
+            sourceTokenAmount,
+            exchangeRate
+        );
+        emit OfferCreated(
+            newOfferId,
+            sellerSourceAddress,
+            sellerTargetAddress,
+            chain,
+            targetChain,
+            sourceTokenAddress,
+            targetTokenAddress,
+            sourceTokenAmount,
+            exchangeRate
+        );
+
+        IERC20(sourceTokenAddress).transferFrom(msg.sender, address(this), sourceTokenAmount);
+        _sendCreateOfferMessage(cost, newOfferId);
     }
 
     function _validateOfferParams(
@@ -78,10 +128,13 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         }
     }
 
-    function _sendCreateOfferMessage(uint256 offerId, uint256 cost) private {
+    function _sendCreateOfferMessage(uint256 cost, uint256 offerId) private {
         Offer storage offer = offers[offerId];
 
-        bytes memory payload = abi.encode(CrossChainMessages.OfferAccepted, offerId, offer);
+        bytes memory payload = abi.encode(
+            CrossChainMessages.OfferCreated,
+            abi.encode(offerId, offer)
+        );
 
         wormholeRelayer.sendPayloadToEvm{value: cost}(
             offer.targetChain,
@@ -92,52 +145,53 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         );
     }
 
-    function createOffer(
-        uint16 targetChain,
-        address sourceTokenAddress,
-        address targetTokenAddress,
-        uint256 sourceTokenAmount,
-        uint256 exchangeRate
-    ) public payable virtual override returns (uint256 newOfferId) {
-        uint256 cost = quoteCrossChainDelivery(targetChain);
-        _validateOfferParams(targetChain, sourceTokenAmount, exchangeRate, cost);
-
-        address seller = msg.sender;
-
-        newOfferId = hashOffer(
-            seller,
-            chain,
-            targetChain,
-            sourceTokenAddress,
-            targetTokenAddress,
-            exchangeRate
+    function receiveWormholeMessages(
+        bytes memory payload,
+        bytes[] memory,
+        bytes32 sourceAddress,
+        uint16 sourceChain,
+        bytes32
+    ) public payable virtual override {
+        (CrossChainMessages messageType, bytes memory messagePayload) = abi.decode(
+            payload,
+            (CrossChainMessages, bytes)
         );
-        if (offers[newOfferId].seller != address(0)) {
-            revert OfferAlreadyExists(newOfferId);
+
+        address sender = fromWormholeFormat(sourceAddress);
+
+        if ((_otherOtcMarkets[sourceChain]) != sender) {
+            revert OnlyOtc(sender);
         }
 
-        offers[newOfferId] = Offer(
-            seller,
-            chain,
-            targetChain,
-            sourceTokenAddress,
-            targetTokenAddress,
-            sourceTokenAmount,
-            exchangeRate
-        );
-        emit OfferCreated(
-            newOfferId,
-            seller,
-            chain,
-            targetChain,
-            sourceTokenAddress,
-            targetTokenAddress,
-            sourceTokenAmount,
-            exchangeRate
+        if (messageType == CrossChainMessages.OfferCreated) {
+            (uint256 offerId, Offer memory offer) = abi.decode(messagePayload, (uint256, Offer));
+
+            if (chain != offer.targetChain) {
+                revert InvalidTarget(_otherOtcMarkets[offer.targetChain]);
+            }
+
+            _receiveOffer(offerId, offer);
+        } else if (messageType == CrossChainMessages.OfferAccepted) {
+            (uint256 offerId, address buyer) = abi.decode(messagePayload, (uint256, address));
+
+            uint16 offerSourceChain = offers[offerId].sourceChain;
+            if (chain != offerSourceChain) {
+                revert InvalidTarget(_otherOtcMarkets[offerSourceChain]);
+            }
+
+            _closeOffer(offerId, buyer);
+        }
+    }
+
+    function _closeOffer(uint256 offerId, address buyer) private {
+        IERC20(offers[offerId].sourceTokenAddress).transfer(
+            buyer,
+            offers[offerId].sourceTokenAmount
         );
 
-        IERC20(sourceTokenAddress).transferFrom(msg.sender, address(this), sourceTokenAmount);
-        _sendCreateOfferMessage(newOfferId, cost);
+        delete offers[offerId];
+
+        emit OfferClosed(offerId);
     }
 
     function _receiveOffer(uint256 offerId, Offer memory offer) private {
@@ -146,31 +200,62 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         emit OfferReceived(offerId);
     }
 
-    function receiveWormholeMessages(
-        bytes memory payload,
-        bytes[] memory,
-        bytes32 sourceAddress,
-        uint16 sourceChain,
-        bytes32
-    ) public payable virtual override {
-        // CrossChainMessages messageType = abi.decode(payload, (CrossChainMessages));
-        // address sender = fromWormholeFormat(sourceAddress);
+    function acceptOffer(uint256 offerId) public payable virtual override {
+        Offer storage offer = offers[offerId];
 
-        // if ((_otherOtcMarkets[sourceChain]) != sender) {
-        //     revert OnlyOtc(sender);
-        // }
-
-        //if (messageType == CrossChainMessages.OfferCreated) {
-        (CrossChainMessages messageType, uint256 offerId, Offer memory offer) = abi.decode(
-            payload,
-            (CrossChainMessages, uint256, Offer)
-        );
+        if (offer.sellerSourceAddress == address(0)) {
+            revert NonexistentOffer(offerId);
+        }
 
         if (chain != offer.targetChain) {
             revert InvalidTarget(_otherOtcMarkets[offer.targetChain]);
         }
 
-        _receiveOffer(offerId, offer);
-        //}
+        uint256 cost = quoteCrossChainDelivery(offer.sourceChain);
+        if (msg.value < cost) {
+            revert InsufficientValue(msg.value, cost);
+        }
+
+        _acceptOffer(cost, offerId);
+    }
+
+    function _acceptOffer(uint256 cost, uint256 offerId) private {
+        Offer storage offer = offers[offerId];
+        address buyer = msg.sender;
+
+        uint256 amount = offer.sourceTokenAmount * offer.exchangeRate;
+        uint256 fee = amount > 100 ether ? amount / 100 : 1 ether;
+
+        uint16 sourceChain = offer.sourceChain;
+
+        IERC20(offer.targetTokenAddress).transferFrom(buyer, address(this), fee);
+        IERC20(offer.targetTokenAddress).transferFrom(
+            buyer,
+            offer.sellerTargetAddress,
+            amount - fee
+        );
+        delete offers[offerId];
+
+        _sendAcceptOfferMessage(cost, offerId, sourceChain, buyer);
+    }
+
+    function _sendAcceptOfferMessage(
+        uint256 cost,
+        uint256 offerId,
+        uint16 sourceChain,
+        address buyer
+    ) private {
+        bytes memory payload = abi.encode(
+            CrossChainMessages.OfferAccepted,
+            abi.encode(offerId, buyer)
+        );
+
+        wormholeRelayer.sendPayloadToEvm{value: cost}(
+            sourceChain,
+            _otherOtcMarkets[sourceChain],
+            payload,
+            0,
+            GAS_LIMIT
+        );
     }
 }

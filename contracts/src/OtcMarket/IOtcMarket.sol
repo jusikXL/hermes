@@ -8,7 +8,8 @@ interface IOtcMarket {
     }
 
     struct Offer {
-        address seller;
+        address sellerSourceAddress;
+        address sellerTargetAddress;
         uint16 sourceChain;
         uint16 targetChain;
         address sourceTokenAddress;
@@ -27,25 +28,19 @@ interface IOtcMarket {
     error NonexistentOffer(uint256 offerId);
 
     event OfferCreated(
-        uint256 offerId,
-        address seller,
-        uint16 sourceChain,
-        uint16 targetChain,
+        uint256 indexed offerId,
+        address sellerSourceAddress,
+        address sellerTargetAddress,
+        uint16 indexed sourceChain,
+        uint16 indexed targetChain,
         address sourceTokenAddress,
         address targetTokenAddress,
         uint256 sourceTokenAmount,
         uint256 exchangeRate
     );
-    event OfferReceived(uint256 offerId);
-
-    /**
-     * @dev Emmited when the offer is accepted.
-     */
+    event OfferReceived(uint256 indexed offerId);
+    event OfferClosed(uint256 indexed offerId);
     event OfferAccepted(uint256 indexed offerId, address indexed buyer);
-
-    /**
-     * @dev Emmited when the offer is canceled.
-     */
     event OfferCancelled(uint256 indexed offerId);
 
     function hashOffer(
@@ -59,9 +54,12 @@ interface IOtcMarket {
 
     function createOffer(
         uint16 targetChain,
+        address sellerTargetAddress,
         address sourceTokenAddress,
         address targetTokenAddress,
         uint256 sourceTokenAmount,
         uint256 exchangeRate
     ) external payable returns (uint256 newOfferId);
+
+    function acceptOffer(uint256 offerId) external payable;
 }
