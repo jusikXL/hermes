@@ -24,8 +24,10 @@ interface IOtcMarket {
     error OfferAlreadyExists(uint256 offerId);
     error OnlySeller(address operator);
     error OnlyOtc(address operator);
+    error OnlyWormholeRelayer(address operator);
     error InvalidTarget(address target);
     error NonexistentOffer(uint256 offerId);
+    error InvalidMessage();
 
     event OfferCreated(
         uint256 indexed offerId,

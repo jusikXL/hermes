@@ -152,6 +152,10 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         uint16 sourceChain,
         bytes32
     ) public payable virtual override {
+        if (msg.sender != address(wormholeRelayer)) {
+            revert OnlyWormholeRelayer(msg.sender);
+        }
+
         (CrossChainMessages messageType, bytes memory messagePayload) = abi.decode(
             payload,
             (CrossChainMessages, bytes)
@@ -180,6 +184,8 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             }
 
             _closeOffer(offerId, buyer);
+        } else {
+            revert InvalidMessage();
         }
     }
 

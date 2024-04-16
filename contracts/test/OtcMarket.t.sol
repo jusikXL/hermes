@@ -8,6 +8,7 @@ import {MyToken} from "../src/MyToken.sol";
 import {IERC20Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {WormholeRelayerTrippleTest} from "./WormholeRelayerTrippleTest.sol";
 import "wormhole-solidity-sdk/Utils.sol";
+import "forge-std/Test.sol";
 
 contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
     OtcMarket public firstOtcMarket;
@@ -243,7 +244,7 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
         );
     }
 
-    function testCreateOffer_OnlyOtc() public {
+    function testCreateOffer_OnlyWormholeRelayer() public {
         uint256 offerId = firstOtcMarket.hashOffer(
             address(this),
             secondChain,
@@ -268,6 +269,9 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
             abi.encode(offerId, offer)
         );
 
+        vm.expectRevert(
+            abi.encodeWithSelector(IOtcMarket.OnlyWormholeRelayer.selector, address(this))
+        );
         firstOtcMarket.receiveWormholeMessages(
             payload,
             new bytes[](0),
@@ -275,5 +279,27 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
             secondChain,
             bytes32(0)
         );
+    }
+
+    function testCreateOffer_OnlyOtc() public {
+        vm.selectFork(thirdFork);
+        thirdOtcMarket.listOtcMarket(firstChain, address(firstOtcMarket));
+
+        vm.recordLogs();
+        _createOffer(thirdOtcMarket, firstChain, thirdToken, address(firstToken));
+        performDelivery();
+
+        vm.selectFork(firstFork);
+        uint256 offerId = firstOtcMarket.hashOffer(
+            address(this),
+            thirdChain,
+            firstChain,
+            address(thirdToken),
+            address(firstToken),
+            EXCHANGE_RATE
+        );
+        (address mca, , , , , , , ) = firstOtcMarket.offers(offerId);
+
+        assertEq(mca, address(0));
     }
 }
