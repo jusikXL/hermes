@@ -302,4 +302,75 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
 
         assertEq(mca, address(0));
     }
+
+
+    function testCancelOffer() public {
+        vm.recordLogs();
+        _createOffer(firstOtcMarket, secondChain, firstToken, address(secondToken));
+        performDelivery();
+
+        
+
+        uint256 offerId = firstOtcMarket.hashOffer(
+            address(this),
+            firstChain,
+            secondChain,
+            address(firstToken),
+            address(secondToken),
+            EXCHANGE_RATE
+        );
+        // check added offer on first chain
+        (address seller, , , , , , ,) = firstOtcMarket.offers(offerId);
+        assertEq(seller, address(this));
+
+        vm.selectFork(secondFork);
+        // check added offer on second chain
+        (seller, , , , , , ,) = secondOtcMarket.offers(offerId);
+        assertEq(seller, address(this));
+
+
+
+        vm.selectFork(secondFork);
+        uint256 cost2 = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+
+        vm.selectFork(firstFork);
+        uint256 cost1 = firstOtcMarket.quoteCrossChainDelivery(secondChain, cost2);
+
+        vm.selectFork(secondFork);
+
+        vm.selectFork(firstFork);
+        firstOtcMarket.cancelOffer{value: cost1}
+        (
+            offerId, 
+            cost2
+        );
+
+        vm.selectFork(secondFork);
+
+        vm.expectEmit(true, false, false, false, address(secondOtcMarket));
+        emit IOtcMarket.OfferCancelationRequestReceived(offerId);
+
+        vm.selectFork(firstFork);
+        performDelivery();
+
+        vm.selectFork(firstFork);
+        vm.expectEmit(true, false, false, false, address(firstOtcMarket));
+        emit IOtcMarket.OfferCancelled(offerId);
+
+        vm.selectFork(secondFork);
+        performDelivery();
+
+
+        //check offer was deleted on second chain
+
+        (seller, , , , , , ,) = secondOtcMarket.offers(offerId);
+        assertEq(seller, address(0));
+
+
+        //check offer was deleted on first chain
+        vm.selectFork(firstFork);
+        (seller, , , , , , ,) = firstOtcMarket.offers(offerId);
+        assertEq(seller, address(0));
+
+    }
 }
