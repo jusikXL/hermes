@@ -4,7 +4,9 @@ pragma solidity ^0.8.20;
 interface IOtcMarket {
     enum CrossChainMessages {
         OfferCreated,
-        OfferAccepted
+        OfferAccepted,
+        OfferCancelationRequest,
+        OfferCancelled
     }
 
     struct Offer {
@@ -25,7 +27,7 @@ interface IOtcMarket {
     error OnlySeller(address operator);
     error OnlyOtc(address operator);
     error OnlyWormholeRelayer(address operator);
-    error InvalidTarget(address target);
+    error InvalidChain(uint16 chain);
     error NonexistentOffer(uint256 offerId);
     error InvalidMessage();
 
@@ -44,6 +46,7 @@ interface IOtcMarket {
     event OfferClosed(uint256 indexed offerId);
     event OfferAccepted(uint256 indexed offerId, address indexed buyer);
     event OfferCancelled(uint256 indexed offerId);
+    event OfferCancelationRequestReceived(uint256 indexed offerId);
 
     function hashOffer(
         address seller,
@@ -64,4 +67,7 @@ interface IOtcMarket {
     ) external payable returns (uint256 newOfferId);
 
     function acceptOffer(uint256 offerId) external payable;
+
+
+    function cancelOffer(uint256 offerId, uint256 receiverValue) external payable;
 }
