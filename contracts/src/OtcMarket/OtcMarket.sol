@@ -11,6 +11,9 @@ import {IWormholeRelayer} from "wormhole-solidity-sdk/interfaces/IWormholeRelaye
 
 import {IOtcMarket} from "./IOtcMarket.sol";
 
+/**
+ * @dev See {IOtcMarket}.
+ */
 contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
     uint256 public constant GAS_LIMIT = 100_000_000;
 
@@ -33,7 +36,10 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         _otherOtcMarkets[targetChain] = otcMarket;
     }
 
-    function quoteCrossChainDelivery(uint16 targetChain, uint256 receiverValue) public view returns (uint256 cost) {
+    function quoteCrossChainDelivery(
+        uint16 targetChain,
+        uint256 receiverValue
+    ) public view returns (uint256 cost) {
         (cost, ) = wormholeRelayer.quoteEVMDeliveryPrice(targetChain, receiverValue, GAS_LIMIT);
     }
 
@@ -64,6 +70,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             );
     }
 
+    //////////// < CREATE ////////////
     function createOffer(
         uint16 targetChain,
         address sellerTargetAddress,
@@ -121,14 +128,14 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         uint256 exchangeRate,
         uint256 cost
     ) private view {
+        if (msg.value < cost) {
+            revert InsufficientValue(msg.value, cost);
+        }
         if (sourceTokenAmount == 0 || exchangeRate == 0) {
             revert InvalidPrice(sourceTokenAmount, exchangeRate);
         }
-        if (_otherOtcMarkets[targetChain] == address(0)) {
-            revert UnsupportedChain(targetChain);
-        }
-        if (msg.value < cost) {
-            revert InsufficientValue(msg.value, cost);
+        if (_otherOtcMarkets[targetChain] == address(0) || targetChain == chain) {
+            revert InvalidChain(targetChain);
         }
     }
 
@@ -149,131 +156,36 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         );
     }
 
-    function receiveWormholeMessages(
-        bytes memory payload,
-        bytes[] memory,
-        bytes32 sourceAddress,
-        uint16 sourceChain,
-        bytes32
-    ) public payable virtual override {
-        if (msg.sender != address(wormholeRelayer)) {
-            revert OnlyWormholeRelayer(msg.sender);
-        }
-
-        (CrossChainMessages messageType, bytes memory messagePayload) = abi.decode(
-            payload,
-            (CrossChainMessages, bytes)
-        );
-
-        address sender = fromWormholeFormat(sourceAddress);
-
-
-        if ((_otherOtcMarkets[sourceChain]) != sender) {
-            revert OnlyOtc(sender);
-        }
-
-        if (messageType == CrossChainMessages.OfferCreated) {
-            (uint256 offerId, Offer memory offer) = abi.decode(messagePayload, (uint256, Offer));
-
-            if (chain != offer.targetChain) {
-                revert InvalidChain(offer.targetChain);
-            }
-
-            _receiveOffer(offerId, offer);
-        } else if (messageType == CrossChainMessages.OfferAccepted) {
-            (uint256 offerId, address buyer) = abi.decode(messagePayload, (uint256, address));
-
-            uint16 offerSourceChain = offers[offerId].sourceChain;
-            if (chain != offerSourceChain) {
-                revert InvalidChain(offerSourceChain);
-            }
-
-            _closeOffer(offerId, buyer);
-        } else if (messageType == CrossChainMessages.OfferCancelationRequest) {
-            uint256 offerId = abi.decode(messagePayload, (uint256));
-
-            uint16 offerTargetChain = offers[offerId].targetChain;
-            uint16 offerSourceChain = offers[offerId].sourceChain;
-            if (chain != offerTargetChain) {
-                revert InvalidChain(offerTargetChain);
-            }
-
-            if(sender != _otherOtcMarkets[offerSourceChain]){
-                revert OnlyOtc(sender);
-            }
-
-            uint256 cost = quoteCrossChainDelivery(offerSourceChain);
-            if (msg.value < cost) {
-                revert InsufficientValue(msg.value, cost);
-            }
-
-            _cancelOfferRequest(cost, offerId);
-        } else if (messageType == CrossChainMessages.OfferCancelled) {
-            uint256 offerId = abi.decode(messagePayload, (uint256));
-            if (chain != offers[offerId].sourceChain) {
-                revert InvalidChain(offers[offerId].targetChain);
-            }
-            if(sender != _otherOtcMarkets[offers[offerId].targetChain]) {
-                revert OnlyOtc(sender);
-            }
-            _cancelOffer(offerId);
-        } else {
-            revert InvalidMessage();
-        }
-    }
-
-    function _cancelOffer(uint256 offerId) private {
-        Offer memory offer = offers[offerId];
-
-        IERC20(offer.sourceTokenAddress).transfer(offer.sellerSourceAddress, offer.sourceTokenAmount);
-
-        delete offers[offerId];
-
-        emit OfferCancelled(offerId);
-
-    }
-
-    function _cancelOfferRequest(uint256 cost, uint256 offerId) private {
-        
-        uint16 sourceChain = offers[offerId].sourceChain;
-
-        delete offers[offerId];
-    
-        emit OfferCancelationRequestReceived(offerId);
-        _sendCancelOffer(cost, offerId, sourceChain);
-    }
-
-    function _closeOffer(uint256 offerId, address buyer) private {
-        IERC20(offers[offerId].sourceTokenAddress).transfer(
-            buyer,
-            offers[offerId].sourceTokenAmount
-        );
-
-        delete offers[offerId];
-
-        emit OfferClosed(offerId);
-    }
-
     function _receiveOffer(uint256 offerId, Offer memory offer) private {
         offers[offerId] = offer;
 
-        emit OfferReceived(offerId);
+        emit OfferCreated(
+            offerId,
+            offer.sellerSourceAddress,
+            offer.sellerTargetAddress,
+            offer.sourceChain,
+            offer.targetChain,
+            offer.sourceTokenAddress,
+            offer.targetTokenAddress,
+            offer.sourceTokenAmount,
+            offer.exchangeRate
+        );
     }
+    //////////// CREATE > ////////////
 
+    //////////// < ACCEPT ////////////
     function acceptOffer(uint256 offerId) public payable virtual override {
         Offer storage offer = offers[offerId];
-
-        if (offer.sellerSourceAddress == address(0)) {
-            revert NonexistentOffer(offerId);
-        }
-
-        if (chain != offer.targetChain) {
-            revert InvalidChain(offer.targetChain);
-        }
 
         uint256 cost = quoteCrossChainDelivery(offer.sourceChain);
         if (msg.value < cost) {
             revert InsufficientValue(msg.value, cost);
+        }
+        if (chain != offer.targetChain) {
+            revert InvalidChain(offer.targetChain);
+        }
+        if (offer.sellerSourceAddress == address(0)) {
+            revert NonexistentOffer(offerId);
         }
 
         _acceptOffer(cost, offerId);
@@ -296,6 +208,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         );
         delete offers[offerId];
 
+        emit OfferAccepted(offerId, buyer);
         _sendAcceptOfferMessage(cost, offerId, sourceChain, buyer);
     }
 
@@ -318,63 +231,58 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             GAS_LIMIT
         );
     }
+    //////////// ACCEPT > ////////////
 
-    function cancelOffer(
-        uint256 offerId,
-        uint256 receiverValue
-            /*Value caclculated on frontend needed to send message back to chain A*/
-    )
-        public
-        payable
-        virtual
-        override
-    {
+    //////////// < CANCEL ////////////
+    function cancelOffer(uint256 offerId, uint256 targetCost) public payable virtual override {
         Offer storage offer = offers[offerId];
 
-        if (offer.sellerSourceAddress == address(0)) {
-
-            revert NonexistentOffer(offerId);
-        }
-
-        uint256 cost = quoteCrossChainDelivery(offer.targetChain, receiverValue);
+        uint256 cost = quoteCrossChainDelivery(offer.targetChain, targetCost);
         if (msg.value < cost) {
-
             revert InsufficientValue(msg.value, cost);
         }
-
+        if (chain != offer.sourceChain) {
+            revert InvalidChain(offer.sourceChain);
+        }
         if (offer.sellerSourceAddress != msg.sender) {
-
             revert OnlySeller(msg.sender);
         }
 
-        if (chain != offer.sourceChain) {
-
-            revert InvalidChain(offer.sourceChain);
-        }
-
-        _sendCancelOfferRequest(cost, receiverValue, offerId);
+        _sendCancelOfferAppealMessage(cost, targetCost, offerId);
     }
 
-    function _sendCancelOfferRequest(uint256 cost, uint256 receiverValue, uint256 offerId) private {
+    function _sendCancelOfferAppealMessage(
+        uint256 cost,
+        uint256 targetCost,
+        uint256 offerId
+    ) private {
         uint16 targetChain = offers[offerId].targetChain;
+
         bytes memory payload = abi.encode(
-                CrossChainMessages.OfferCancelationRequest,
-                abi.encode(offerId)
+            CrossChainMessages.OfferCancelAppeal,
+            abi.encode(offerId)
         );
+
         wormholeRelayer.sendPayloadToEvm{value: cost}(
             targetChain,
             _otherOtcMarkets[targetChain],
             payload,
-            receiverValue,
+            targetCost,
             GAS_LIMIT
         );
     }
 
-    function _sendCancelOffer(uint256 cost, uint256 offerId, uint16 sourceChain) private{
-        bytes memory payload = abi.encode(
-            CrossChainMessages.OfferCancelled,
-            abi.encode(offerId)
-        );
+    function _cancelOffer(uint256 cost, uint256 offerId) private {
+        uint16 sourceChain = offers[offerId].sourceChain;
+
+        delete offers[offerId];
+
+        emit OfferCanceled(offerId);
+        _sendCancelOfferMessage(cost, offerId, sourceChain);
+    }
+
+    function _sendCancelOfferMessage(uint256 cost, uint256 offerId, uint16 sourceChain) private {
+        bytes memory payload = abi.encode(CrossChainMessages.OfferCanceled, abi.encode(offerId));
 
         wormholeRelayer.sendPayloadToEvm{value: cost}(
             sourceChain,
@@ -383,6 +291,81 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             0,
             GAS_LIMIT
         );
+    }
+    //////////// CANCEL > ////////////
 
+    function _closeOffer(uint256 offerId, address account) private {
+        IERC20(offers[offerId].sourceTokenAddress).transfer(
+            account,
+            offers[offerId].sourceTokenAmount
+        );
+
+        delete offers[offerId];
+    }
+
+    function receiveWormholeMessages(
+        bytes memory payload,
+        bytes[] memory,
+        bytes32 sourceAddress,
+        uint16 sourceChain,
+        bytes32
+    ) public payable virtual override {
+        if (msg.sender != address(wormholeRelayer)) {
+            revert OnlyWormholeRelayer(msg.sender);
+        }
+
+        (CrossChainMessages messageType, bytes memory messagePayload) = abi.decode(
+            payload,
+            (CrossChainMessages, bytes)
+        );
+
+        address sender = fromWormholeFormat(sourceAddress);
+        if ((_otherOtcMarkets[sourceChain]) != sender) {
+            revert OnlyOtc(sender);
+        }
+
+        if (messageType == CrossChainMessages.OfferCreated) {
+            (uint256 offerId, Offer memory offer) = abi.decode(messagePayload, (uint256, Offer));
+
+            if (chain != offer.targetChain) {
+                revert InvalidChain(offer.targetChain);
+            }
+
+            _receiveOffer(offerId, offer);
+        } else if (messageType == CrossChainMessages.OfferAccepted) {
+            (uint256 offerId, address buyer) = abi.decode(messagePayload, (uint256, address));
+
+            uint16 offerSourceChain = offers[offerId].sourceChain;
+            if (chain != offerSourceChain) {
+                revert InvalidChain(offerSourceChain);
+            }
+
+            emit OfferAccepted(offerId, buyer);
+            _closeOffer(offerId, buyer);
+        } else if (messageType == CrossChainMessages.OfferCancelAppeal) {
+            uint256 offerId = abi.decode(messagePayload, (uint256));
+            uint16 offerTargetChain = offers[offerId].targetChain;
+
+            uint256 cost = quoteCrossChainDelivery(offers[offerId].sourceChain);
+            if (msg.value < cost) {
+                revert InsufficientValue(msg.value, cost);
+            }
+            if (chain != offerTargetChain) {
+                revert InvalidChain(offerTargetChain);
+            }
+
+            _cancelOffer(cost, offerId);
+        } else if (messageType == CrossChainMessages.OfferCanceled) {
+            uint256 offerId = abi.decode(messagePayload, (uint256));
+
+            if (chain != offers[offerId].sourceChain) {
+                revert InvalidChain(offers[offerId].targetChain);
+            }
+
+            emit OfferCanceled(offerId);
+            _closeOffer(offerId, offers[offerId].sellerSourceAddress);
+        } else {
+            revert UnsupportedMessage();
+        }
     }
 }
