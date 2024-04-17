@@ -53,317 +53,312 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
         thirdOtcMarket.listOtcMarket(secondChain, address(secondOtcMarket));
     }
 
-    // function testCreateOffer() public {
-    //     vm.selectFork(0);
-    //     firstToken.approve(address(firstOtcMarket), AMOUNT);
-    //     uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+    function testCreateOffer() public {
+        vm.selectFork(0);
+        firstToken.approve(address(firstOtcMarket), AMOUNT);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
 
-    //     uint256 offerId = firstOtcMarket.hashOffer(
-    //         address(this),
-    //         firstChain,
-    //         secondChain,
-    //         address(firstToken),
-    //         address(secondToken),
-    //         EXCHANGE_RATE
-    //     );
+        uint256 offerId = firstOtcMarket.hashOffer(
+            address(this),
+            firstChain,
+            secondChain,
+            address(firstToken),
+            address(secondToken),
+            EXCHANGE_RATE
+        );
 
-    //     vm.recordLogs();
-    //     vm.expectEmit(true, true, true, true, address(firstOtcMarket));
-    //     emit IOtcMarket.OfferCreated(
-    //         offerId,
-    //         address(this),
-    //         address(this),
-    //         firstChain,
-    //         secondChain,
-    //         address(firstToken),
-    //         address(secondToken),
-    //         AMOUNT,
-    //         EXCHANGE_RATE
-    //     );
-    //     firstOtcMarket.createOffer{value: cost}(
-    //         secondChain,
-    //         address(this),
-    //         address(firstToken),
-    //         address(secondToken),
-    //         AMOUNT,
-    //         EXCHANGE_RATE
-    //     );
+        vm.recordLogs();
+        vm.expectEmit(true, true, true, true, address(firstOtcMarket));
+        emit IOtcMarket.OfferCreated(
+            offerId,
+            address(this),
+            address(this),
+            firstChain,
+            secondChain,
+            address(firstToken),
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        firstOtcMarket.createOffer{value: cost}(
+            secondChain,
+            address(this),
+            address(firstToken),
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
 
-    //     vm.selectFork(secondFork);
-    //     vm.expectEmit(true, false, false, false, address(secondOtcMarket));
-    //     emit IOtcMarket.OfferReceived(offerId);
+        vm.selectFork(secondFork);
+        vm.expectEmit(true, true, true, true, address(secondOtcMarket));
+        emit IOtcMarket.OfferCreated(
+            offerId,
+            address(this),
+            address(this),
+            firstChain,
+            secondChain,
+            address(firstToken),
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
 
-    //     vm.selectFork(firstFork);
-    //     performDelivery();
+        vm.selectFork(firstFork);
+        performDelivery();
 
-    //     vm.selectFork(secondFork);
-    //     (
-    //         address mca,
-    //         address mta,
-    //         uint16 sc,
-    //         uint16 tc,
-    //         address sta,
-    //         address tta,
-    //         uint256 a,
-    //         uint256 er
-    //     ) = secondOtcMarket.offers(offerId);
+        vm.selectFork(secondFork);
+        (
+            address mca,
+            address mta,
+            uint16 sc,
+            uint16 tc,
+            address sta,
+            address tta,
+            uint256 a,
+            uint256 er
+        ) = secondOtcMarket.offers(offerId);
 
-    //     assertEq(mca, address(this));
-    //     assertEq(mta, address(this));
-    //     assertEq(sc, firstChain);
-    //     assertEq(tc, secondChain);
-    //     assertEq(sta, address(firstToken));
-    //     assertEq(tta, address(secondToken));
-    //     assertEq(a, AMOUNT);
-    //     assertEq(er, EXCHANGE_RATE);
-    // }
+        assertEq(mca, address(this));
+        assertEq(mta, address(this));
+        assertEq(sc, firstChain);
+        assertEq(tc, secondChain);
+        assertEq(sta, address(firstToken));
+        assertEq(tta, address(secondToken));
+        assertEq(a, AMOUNT);
+        assertEq(er, EXCHANGE_RATE);
+    }
 
-    // function testCreateOffer_InsufficientAllowance() public {
-    //     uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+    function testCreateOffer_InsufficientAllowance() public {
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
 
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(
-    //             ERC20InsufficientAllowance.selector,
-    //             address(firstOtcMarket),
-    //             0,
-    //             AMOUNT
-    //         )
-    //     );
-    //     firstOtcMarket.createOffer{value: cost}(
-    //         secondChain,
-    //         address(this),
-    //         address(firstToken),
-    //         address(secondToken),
-    //         AMOUNT,
-    //         EXCHANGE_RATE
-    //     );
-    // }
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC20InsufficientAllowance.selector,
+                address(firstOtcMarket),
+                0,
+                AMOUNT
+            )
+        );
+        firstOtcMarket.createOffer{value: cost}(
+            secondChain,
+            address(this),
+            address(firstToken),
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+    }
 
-    // function testCreateOffer_InvalidPrice() public {
-    //     uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+    function testCreateOffer_InvalidPrice() public {
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
 
-    //     vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, 0, EXCHANGE_RATE));
-    //     firstOtcMarket.createOffer{value: cost}(
-    //         secondChain,
-    //         address(this),
-    //         address(firstToken),
-    //         address(secondToken),
-    //         0,
-    //         EXCHANGE_RATE
-    //     );
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, 0, EXCHANGE_RATE));
+        firstOtcMarket.createOffer{value: cost}(
+            secondChain,
+            address(this),
+            address(firstToken),
+            address(secondToken),
+            0,
+            EXCHANGE_RATE
+        );
 
-    //     vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, AMOUNT, 0));
-    //     firstOtcMarket.createOffer{value: cost}(
-    //         secondChain,
-    //         address(this),
-    //         address(firstToken),
-    //         address(secondToken),
-    //         AMOUNT,
-    //         0
-    //     );
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, AMOUNT, 0));
+        firstOtcMarket.createOffer{value: cost}(
+            secondChain,
+            address(this),
+            address(firstToken),
+            address(secondToken),
+            AMOUNT,
+            0
+        );
 
-    //     vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, 0, 0));
-    //     firstOtcMarket.createOffer{value: cost}(
-    //         secondChain,
-    //         address(this),
-    //         address(firstToken),
-    //         address(secondToken),
-    //         0,
-    //         0
-    //     );
-    // }
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, 0, 0));
+        firstOtcMarket.createOffer{value: cost}(
+            secondChain,
+            address(this),
+            address(firstToken),
+            address(secondToken),
+            0,
+            0
+        );
+    }
 
-    // function testCreateOffer_UnsupportedChain() public {
-    //     uint256 cost = firstOtcMarket.quoteCrossChainDelivery(thirdChain);
+    function testCreateOffer_InvalidChain() public {
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(thirdChain);
 
-    //     vm.expectRevert(abi.encodeWithSelector(IOtcMarket.UnsupportedChain.selector, thirdChain));
-    //     firstOtcMarket.createOffer{value: cost}(
-    //         thirdChain,
-    //         address(this),
-    //         address(firstToken),
-    //         address(secondToken),
-    //         AMOUNT,
-    //         EXCHANGE_RATE
-    //     );
-    // }
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, thirdChain));
+        firstOtcMarket.createOffer{value: cost}(
+            thirdChain,
+            address(this),
+            address(firstToken),
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+    }
 
-    // function testCreateOffer_InsufficientValue() public {
-    //     uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+    function testCreateOffer_InsufficientValue() public {
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
 
-    //     vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InsufficientValue.selector, 0, cost));
-    //     firstOtcMarket.createOffer{value: 0}(
-    //         secondChain,
-    //         address(this),
-    //         address(firstToken),
-    //         address(secondToken),
-    //         AMOUNT,
-    //         EXCHANGE_RATE
-    //     );
-    // }
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InsufficientValue.selector, 0, cost));
+        firstOtcMarket.createOffer{value: 0}(
+            secondChain,
+            address(this),
+            address(firstToken),
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+    }
 
-    // function _createOffer(
-    //     OtcMarket sourceOtcMarket,
-    //     uint16 targetChain,
-    //     MyToken sourceToken,
-    //     address targetToken
-    // ) private {
-    //     uint256 cost = sourceOtcMarket.quoteCrossChainDelivery(targetChain);
-    //     sourceToken.approve(address(sourceOtcMarket), AMOUNT);
-    //     sourceOtcMarket.createOffer{value: cost}(
-    //         targetChain,
-    //         address(this),
-    //         address(sourceToken),
-    //         address(targetToken),
-    //         AMOUNT,
-    //         EXCHANGE_RATE
-    //     );
-    // }
+    function _createOffer(
+        OtcMarket sourceOtcMarket,
+        uint16 targetChain,
+        MyToken sourceToken,
+        address targetToken
+    ) private {
+        uint256 cost = sourceOtcMarket.quoteCrossChainDelivery(targetChain);
+        sourceToken.approve(address(sourceOtcMarket), AMOUNT);
+        sourceOtcMarket.createOffer{value: cost}(
+            targetChain,
+            address(this),
+            address(sourceToken),
+            address(targetToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+    }
 
-    // function testCreateOffer_OfferAlreadyExists() public {
-    //     _createOffer(firstOtcMarket, secondChain, firstToken, address(secondToken));
+    function testCreateOffer_OfferAlreadyExists() public {
+        _createOffer(firstOtcMarket, secondChain, firstToken, address(secondToken));
 
-    //     uint256 offerId = firstOtcMarket.hashOffer(
-    //         address(this),
-    //         firstChain,
-    //         secondChain,
-    //         address(firstToken),
-    //         address(secondToken),
-    //         EXCHANGE_RATE
-    //     );
-    //     uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
-    //     firstToken.approve(address(firstOtcMarket), AMOUNT);
+        uint256 offerId = firstOtcMarket.hashOffer(
+            address(this),
+            firstChain,
+            secondChain,
+            address(firstToken),
+            address(secondToken),
+            EXCHANGE_RATE
+        );
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+        firstToken.approve(address(firstOtcMarket), AMOUNT);
 
-    //     vm.expectRevert(abi.encodeWithSelector(IOtcMarket.OfferAlreadyExists.selector, offerId));
-    //     firstOtcMarket.createOffer{value: cost}(
-    //         secondChain,
-    //         address(this),
-    //         address(firstToken),
-    //         address(secondToken),
-    //         AMOUNT,
-    //         EXCHANGE_RATE
-    //     );
-    // }
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.OfferAlreadyExists.selector, offerId));
+        firstOtcMarket.createOffer{value: cost}(
+            secondChain,
+            address(this),
+            address(firstToken),
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+    }
 
-    // function testCreateOffer_OnlyWormholeRelayer() public {
-    //     uint256 offerId = firstOtcMarket.hashOffer(
-    //         address(this),
-    //         secondChain,
-    //         firstChain,
-    //         address(secondToken),
-    //         address(firstToken),
-    //         EXCHANGE_RATE
-    //     );
-    //     IOtcMarket.Offer memory offer = IOtcMarket.Offer(
-    //         address(this),
-    //         address(this),
-    //         secondChain,
-    //         firstChain,
-    //         address(secondToken),
-    //         address(firstToken),
-    //         AMOUNT,
-    //         EXCHANGE_RATE
-    //     );
+    function testCreateOffer_OnlyWormholeRelayer() public {
+        uint256 offerId = firstOtcMarket.hashOffer(
+            address(this),
+            secondChain,
+            firstChain,
+            address(secondToken),
+            address(firstToken),
+            EXCHANGE_RATE
+        );
+        IOtcMarket.Offer memory offer = IOtcMarket.Offer(
+            address(this),
+            address(this),
+            secondChain,
+            firstChain,
+            address(secondToken),
+            address(firstToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
 
-    //     bytes memory payload = abi.encode(
-    //         IOtcMarket.CrossChainMessages.OfferCreated,
-    //         abi.encode(offerId, offer)
-    //     );
+        bytes memory payload = abi.encode(
+            IOtcMarket.CrossChainMessages.OfferCreated,
+            abi.encode(offerId, offer)
+        );
 
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(IOtcMarket.OnlyWormholeRelayer.selector, address(this))
-    //     );
-    //     firstOtcMarket.receiveWormholeMessages(
-    //         payload,
-    //         new bytes[](0),
-    //         toWormholeFormat(address(secondOtcMarket)),
-    //         secondChain,
-    //         bytes32(0)
-    //     );
-    // }
+        vm.expectRevert(
+            abi.encodeWithSelector(IOtcMarket.OnlyWormholeRelayer.selector, address(this))
+        );
+        firstOtcMarket.receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            toWormholeFormat(address(secondOtcMarket)),
+            secondChain,
+            bytes32(0)
+        );
+    }
 
-    // function testCreateOffer_OnlyOtc() public {
-    //     vm.selectFork(thirdFork);
-    //     thirdOtcMarket.listOtcMarket(firstChain, address(firstOtcMarket));
+    function testCreateOffer_OnlyOtc() public {
+        vm.selectFork(thirdFork);
+        thirdOtcMarket.listOtcMarket(firstChain, address(firstOtcMarket));
 
-    //     vm.recordLogs();
-    //     _createOffer(thirdOtcMarket, firstChain, thirdToken, address(firstToken));
-    //     performDelivery();
+        vm.recordLogs();
+        _createOffer(thirdOtcMarket, firstChain, thirdToken, address(firstToken));
+        performDelivery();
 
-    //     vm.selectFork(firstFork);
-    //     uint256 offerId = firstOtcMarket.hashOffer(
-    //         address(this),
-    //         thirdChain,
-    //         firstChain,
-    //         address(thirdToken),
-    //         address(firstToken),
-    //         EXCHANGE_RATE
-    //     );
-    //     (address mca, , , , , , , ) = firstOtcMarket.offers(offerId);
+        vm.selectFork(firstFork);
+        uint256 offerId = firstOtcMarket.hashOffer(
+            address(this),
+            thirdChain,
+            firstChain,
+            address(thirdToken),
+            address(firstToken),
+            EXCHANGE_RATE
+        );
+        (address mca, , , , , , , ) = firstOtcMarket.offers(offerId);
 
-    //     assertEq(mca, address(0));
-    // }
+        assertEq(mca, address(0));
+    }
 
-    // function testCancelOffer() public {
-    //     vm.recordLogs();
-    //     _createOffer(firstOtcMarket, secondChain, firstToken, address(secondToken));
-    //     performDelivery();
+    function testCancelOffer() public {
+        vm.recordLogs();
+        address seller = address(this);
 
-    //     uint256 offerId = firstOtcMarket.hashOffer(
-    //         address(this),
-    //         firstChain,
-    //         secondChain,
-    //         address(firstToken),
-    //         address(secondToken),
-    //         EXCHANGE_RATE
-    //     );
-    //     // check added offer on first chain
-    //     (address seller, , , , , , ,) = firstOtcMarket.offers(offerId);
-    //     assertEq(seller, address(this));
+        _createOffer(firstOtcMarket, secondChain, firstToken, address(secondToken));
+        performDelivery();
 
-    //     vm.selectFork(secondFork);
-    //     // check added offer on second chain
-    //     (seller, , , , , , ,) = secondOtcMarket.offers(offerId);
-    //     assertEq(seller, address(this));
+        uint256 offerId = firstOtcMarket.hashOffer(
+            seller,
+            firstChain,
+            secondChain,
+            address(firstToken),
+            address(secondToken),
+            EXCHANGE_RATE
+        );
 
-    //     vm.selectFork(secondFork);
-    //     uint256 cost2 = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        vm.selectFork(secondFork);
+        uint256 targetCost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        vm.selectFork(firstFork);
+        uint256 sourceCost = firstOtcMarket.quoteCrossChainDelivery(secondChain, targetCost);
 
-    //     vm.selectFork(firstFork);
-    //     uint256 cost1 = firstOtcMarket.quoteCrossChainDelivery(secondChain, cost2);
+        // source: cancel offer appeal
+        firstOtcMarket.cancelOffer{value: sourceCost}(offerId, targetCost);
 
-    //     vm.selectFork(secondFork);
+        // expect emit on target
+        vm.selectFork(secondFork);
+        vm.expectEmit(true, false, false, false, address(secondOtcMarket));
+        emit IOtcMarket.OfferCanceled(offerId);
 
-    //     vm.selectFork(firstFork);
-    //     firstOtcMarket.cancelOffer{value: cost1}
-    //     (
-    //         offerId,
-    //         cost2
-    //     );
+        vm.selectFork(firstFork);
+        performDelivery();
 
-    //     vm.selectFork(secondFork);
+        // expect emit on source
+        vm.selectFork(firstFork);
+        vm.expectEmit(true, false, false, false, address(firstOtcMarket));
+        emit IOtcMarket.OfferCanceled(offerId);
 
-    //     vm.expectEmit(true, false, false, false, address(secondOtcMarket));
-    //     emit IOtcMarket.OfferCancelationRequestReceived(offerId);
+        vm.selectFork(secondFork);
+        performDelivery();
 
-    //     vm.selectFork(firstFork);
-    //     performDelivery();
+        // check that offer was deleted on both chains
+        (seller, , , , , , , ) = secondOtcMarket.offers(offerId);
+        assertEq(seller, address(0));
 
-    //     vm.selectFork(firstFork);
-    //     vm.expectEmit(true, false, false, false, address(firstOtcMarket));
-    //     emit IOtcMarket.OfferCancelled(offerId);
-
-    //     vm.selectFork(secondFork);
-    //     performDelivery();
-
-    //     //check offer was deleted on second chain
-
-    //     (seller, , , , , , ,) = secondOtcMarket.offers(offerId);
-    //     assertEq(seller, address(0));
-
-    //     //check offer was deleted on first chain
-    //     vm.selectFork(firstFork);
-    //     (seller, , , , , , ,) = firstOtcMarket.offers(offerId);
-    //     assertEq(seller, address(0));
-
-    // }
+        vm.selectFork(firstFork);
+        (seller, , , , , , , ) = firstOtcMarket.offers(offerId);
+        assertEq(seller, address(0));
+    }
 }
