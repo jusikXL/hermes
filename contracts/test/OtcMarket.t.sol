@@ -40,7 +40,7 @@ contract TestOtcMarket is MyOtcMarket {
         );
 
         address sender = fromWormholeFormat(sourceAddress);
-        if ((_otherOtcMarkets[sourceChain]) != sender) {
+        if (_otherOtcMarkets[sourceChain].otcMarket != sender) {
             revert OnlyOtc(sender);
         }
 
