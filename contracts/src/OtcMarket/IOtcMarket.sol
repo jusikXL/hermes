@@ -23,6 +23,12 @@ interface IOtcMarket {
         uint256 exchangeRate; // price per source token in target token units
     }
 
+    struct ChainInfo {
+        address otcMarket;
+        uint256 lastOutgoingMessage;
+        uint256 lastIncomingMessage;
+    }
+
     /**
      * @dev Zero as amount or exchange rate
      */
