@@ -296,7 +296,7 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         // if (_otherOtcMarkets[sourceChain].lastIncommingMessage != 0) {
         //     revert;
         // }
-        _otherOtcMarkets[sourceChain].lastIncommingMessage = uint256(keccak256(payload));
+        _otherOtcMarkets[sourceChain].lastIncomingMessage = uint256(keccak256(payload));
         ///
 
         (CrossChainMessages messageType, bytes memory messagePayload) = abi.decode(
