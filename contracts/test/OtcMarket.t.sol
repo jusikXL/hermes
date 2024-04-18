@@ -44,49 +44,7 @@ contract TestOtcMarket is MyOtcMarket {
             revert OnlyOtc(sender);
         }
 
-        if (messageType == CrossChainMessages.OfferCreated) {
-            (uint256 offerId, Offer memory offer) = abi.decode(messagePayload, (uint256, Offer));
-
-            if (chain != offer.targetChain) {
-                revert InvalidChain(offer.targetChain);
-            }
-
-            _receiveOffer(offerId, offer);
-        } else if (messageType == CrossChainMessages.OfferAccepted) {
-            (uint256 offerId, address buyer) = abi.decode(messagePayload, (uint256, address));
-
-            uint16 offerSourceChain = offers[offerId].sourceChain;
-            if (chain != offerSourceChain) {
-                revert InvalidChain(offerSourceChain);
-            }
-
-            emit OfferAccepted(offerId, buyer);
-            _closeOffer(offerId, buyer);
-        } else if (messageType == CrossChainMessages.OfferCancelAppeal) {
-            uint256 offerId = abi.decode(messagePayload, (uint256));
-            uint16 offerTargetChain = offers[offerId].targetChain;
-
-            uint256 cost = quoteCrossChainDelivery(offers[offerId].sourceChain);
-            if (msg.value < cost) {
-                revert InsufficientValue(msg.value, cost);
-            }
-            if (chain != offerTargetChain) {
-                revert InvalidChain(offerTargetChain);
-            }
-
-            _cancelOffer(cost, offerId);
-        } else if (messageType == CrossChainMessages.OfferCanceled) {
-            uint256 offerId = abi.decode(messagePayload, (uint256));
-
-            if (chain != offers[offerId].sourceChain) {
-                revert InvalidChain(offers[offerId].targetChain);
-            }
-
-            emit OfferCanceled(offerId);
-            _closeOffer(offerId, offers[offerId].sellerSourceAddress);
-        } else {
-            revert UnsupportedMessage();
-        }
+        _receiveWormholeMessages(messageType, messagePayload);
     }
 }
 
@@ -359,7 +317,7 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
             abi.encode(offerId, offer)
         );
 
-        address fakeRelayer = 0xC37713ef41Aff1A7ac1c3D02f6f0B3a57F8A3091;
+        address fakeRelayer = makeAddr("fake relayer");
         vm.expectRevert(
             abi.encodeWithSelector(IOtcMarket.OnlyWormholeRelayer.selector, fakeRelayer)
         );
@@ -374,25 +332,75 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
     }
 
     function testCreateOffer_OnlyOtc() public {
-        vm.selectFork(thirdFork);
-        thirdOtcMarket.listOtcMarket(firstChain, address(firstOtcMarket));
-
-        vm.recordLogs();
-        _createOffer(thirdOtcMarket, firstChain, thirdToken, address(firstToken));
-        performDelivery();
-
-        vm.selectFork(firstFork);
         uint256 offerId = firstOtcMarket.hashOffer(
             address(this),
-            thirdChain,
+            secondChain,
             firstChain,
-            address(thirdToken),
+            address(secondToken),
             address(firstToken),
             EXCHANGE_RATE
         );
-        (address mca, , , , , , , ) = firstOtcMarket.offers(offerId);
+        IOtcMarket.Offer memory offer = IOtcMarket.Offer(
+            address(this),
+            address(this),
+            secondChain,
+            firstChain,
+            address(secondToken),
+            address(firstToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
 
-        assertEq(mca, address(0));
+        bytes memory payload = abi.encode(
+            IOtcMarket.CrossChainMessages.OfferCreated,
+            abi.encode(offerId, offer)
+        );
+
+        address fakeOtc = makeAddr("fake otc");
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.OnlyOtc.selector, fakeOtc));
+        firstOtcMarket.receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            toWormholeFormat(fakeOtc),
+            secondChain,
+            bytes32(0)
+        );
+    }
+
+    function testCreateOffer_RelayedToWrongOtc() public {
+        vm.selectFork(thirdFork);
+
+        uint256 offerId = thirdOtcMarket.hashOffer(
+            address(this),
+            secondChain,
+            firstChain,
+            address(secondToken),
+            address(firstToken),
+            EXCHANGE_RATE
+        );
+        IOtcMarket.Offer memory offer = IOtcMarket.Offer(
+            address(this),
+            address(this),
+            secondChain,
+            firstChain,
+            address(secondToken),
+            address(firstToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        bytes memory payload = abi.encode(
+            IOtcMarket.CrossChainMessages.OfferCreated,
+            abi.encode(offerId, offer)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, thirdChain));
+        thirdOtcMarket.receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            toWormholeFormat(address(secondOtcMarket)),
+            secondChain,
+            bytes32(0)
+        );
     }
 
     function testCancelOffer() public {
