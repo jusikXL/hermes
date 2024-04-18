@@ -1,0 +1,325 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// OtcMarket
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const otcMarketAbi = [
+  {
+    type: 'function',
+    inputs: [],
+    name: 'GAS_LIMIT',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'offerId', internalType: 'uint256', type: 'uint256' }],
+    name: 'acceptOffer',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'offerId', internalType: 'uint256', type: 'uint256' },
+      { name: 'targetCost', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'cancelOffer',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'chain',
+    outputs: [{ name: '', internalType: 'uint16', type: 'uint16' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'targetChain', internalType: 'uint16', type: 'uint16' },
+      { name: 'sellerTargetAddress', internalType: 'address', type: 'address' },
+      { name: 'sourceTokenAddress', internalType: 'address', type: 'address' },
+      { name: 'targetTokenAddress', internalType: 'address', type: 'address' },
+      { name: 'sourceTokenAmount', internalType: 'uint256', type: 'uint256' },
+      { name: 'exchangeRate', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'createOffer',
+    outputs: [{ name: 'newOfferId', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'sellerSourceAddress', internalType: 'address', type: 'address' },
+      { name: 'sourceChain', internalType: 'uint16', type: 'uint16' },
+      { name: 'targetChain', internalType: 'uint16', type: 'uint16' },
+      { name: 'sourceTokenAddress', internalType: 'address', type: 'address' },
+      { name: 'targetTokenAddress', internalType: 'address', type: 'address' },
+      { name: 'exchangeRate', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'hashOffer',
+    outputs: [{ name: 'offerId', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'targetChain', internalType: 'uint16', type: 'uint16' },
+      { name: 'otcMarket', internalType: 'address', type: 'address' },
+    ],
+    name: 'listOtcMarket',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'offerId', internalType: 'uint256', type: 'uint256' }],
+    name: 'offers',
+    outputs: [
+      { name: 'sellerSourceAddress', internalType: 'address', type: 'address' },
+      { name: 'sellerTargetAddress', internalType: 'address', type: 'address' },
+      { name: 'sourceChain', internalType: 'uint16', type: 'uint16' },
+      { name: 'targetChain', internalType: 'uint16', type: 'uint16' },
+      { name: 'sourceTokenAddress', internalType: 'address', type: 'address' },
+      { name: 'targetTokenAddress', internalType: 'address', type: 'address' },
+      { name: 'sourceTokenAmount', internalType: 'uint256', type: 'uint256' },
+      { name: 'exchangeRate', internalType: 'uint256', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'owner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'targetChain', internalType: 'uint16', type: 'uint16' }],
+    name: 'quoteCrossChainDelivery',
+    outputs: [{ name: 'cost', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'targetChain', internalType: 'uint16', type: 'uint16' },
+      { name: 'receiverValue', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'quoteCrossChainDelivery',
+    outputs: [{ name: 'cost', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'payload', internalType: 'bytes', type: 'bytes' },
+      { name: '', internalType: 'bytes[]', type: 'bytes[]' },
+      { name: 'sourceAddress', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'sourceChain', internalType: 'uint16', type: 'uint16' },
+      { name: '', internalType: 'bytes32', type: 'bytes32' },
+    ],
+    name: 'receiveWormholeMessages',
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'renounceOwnership',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newOwner', internalType: 'address', type: 'address' }],
+    name: 'transferOwnership',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'wormholeRelayer',
+    outputs: [
+      { name: '', internalType: 'contract IWormholeRelayer', type: 'address' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'offerId',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
+      },
+      {
+        name: 'buyer',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+    ],
+    name: 'OfferAccepted',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'offerId',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
+      },
+    ],
+    name: 'OfferCanceled',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'offerId',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: true,
+      },
+      {
+        name: 'sellerSourceAddress',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+      {
+        name: 'sellerTargetAddress',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+      {
+        name: 'sourceChain',
+        internalType: 'uint16',
+        type: 'uint16',
+        indexed: true,
+      },
+      {
+        name: 'targetChain',
+        internalType: 'uint16',
+        type: 'uint16',
+        indexed: true,
+      },
+      {
+        name: 'sourceTokenAddress',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+      {
+        name: 'targetTokenAddress',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+      {
+        name: 'sourceTokenAmount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'exchangeRate',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+    ],
+    name: 'OfferCreated',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'previousOwner',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+      {
+        name: 'newOwner',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+    ],
+    name: 'OwnershipTransferred',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'provided', internalType: 'uint256', type: 'uint256' },
+      { name: 'required', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'InsufficientValue',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'chain', internalType: 'uint16', type: 'uint16' }],
+    name: 'InvalidChain',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'exchangeRate', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'InvalidPrice',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'offerId', internalType: 'uint256', type: 'uint256' }],
+    name: 'NonexistentOffer',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'NotAnEvmAddress',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'offerId', internalType: 'uint256', type: 'uint256' }],
+    name: 'OfferAlreadyExists',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'OnlyOtc',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'OnlySeller',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'operator', internalType: 'address', type: 'address' }],
+    name: 'OnlyWormholeRelayer',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'owner', internalType: 'address', type: 'address' }],
+    name: 'OwnableInvalidOwner',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'OwnableUnauthorizedAccount',
+  },
+  { type: 'error', inputs: [], name: 'UnsupportedMessage' },
+] as const
