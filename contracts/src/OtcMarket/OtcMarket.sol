@@ -182,7 +182,7 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             revert InsufficientValue(msg.value, cost);
         }
         if (chain != offer.targetChain) {
-            revert InvalidChain(offer.targetChain);
+            revert InvalidChain(chain);
         }
         if (offer.sellerSourceAddress == address(0)) {
             revert NonexistentOffer(offerId);
@@ -242,7 +242,7 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             revert InsufficientValue(msg.value, cost);
         }
         if (chain != offer.sourceChain) {
-            revert InvalidChain(offer.sourceChain);
+            revert InvalidChain(chain);
         }
         if (offer.sellerSourceAddress != msg.sender) {
             revert OnlySeller(msg.sender);
@@ -324,42 +324,47 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             revert OnlyOtc(sender);
         }
 
+        _receiveWormholeMessages(messageType, messagePayload);
+    }
+
+    function _receiveWormholeMessages(
+        CrossChainMessages messageType,
+        bytes memory payload
+    ) internal virtual {
         if (messageType == CrossChainMessages.OfferCreated) {
-            (uint256 offerId, Offer memory offer) = abi.decode(messagePayload, (uint256, Offer));
+            (uint256 offerId, Offer memory offer) = abi.decode(payload, (uint256, Offer));
 
             if (chain != offer.targetChain) {
-                revert InvalidChain(offer.targetChain);
+                revert InvalidChain(chain);
             }
 
             _receiveOffer(offerId, offer);
         } else if (messageType == CrossChainMessages.OfferAccepted) {
-            (uint256 offerId, address buyer) = abi.decode(messagePayload, (uint256, address));
+            (uint256 offerId, address buyer) = abi.decode(payload, (uint256, address));
 
-            uint16 offerSourceChain = offers[offerId].sourceChain;
-            if (chain != offerSourceChain) {
-                revert InvalidChain(offerSourceChain);
+            if (chain != offers[offerId].sourceChain) {
+                revert InvalidChain(chain);
             }
 
             emit OfferAccepted(offerId, buyer);
             _closeOffer(offerId, buyer);
         } else if (messageType == CrossChainMessages.OfferCancelAppeal) {
-            uint256 offerId = abi.decode(messagePayload, (uint256));
-            uint16 offerTargetChain = offers[offerId].targetChain;
+            uint256 offerId = abi.decode(payload, (uint256));
 
             uint256 cost = quoteCrossChainDelivery(offers[offerId].sourceChain);
             if (msg.value < cost) {
                 revert InsufficientValue(msg.value, cost);
             }
-            if (chain != offerTargetChain) {
-                revert InvalidChain(offerTargetChain);
+            if (chain != offers[offerId].targetChain) {
+                revert InvalidChain(chain);
             }
 
             _cancelOffer(cost, offerId);
         } else if (messageType == CrossChainMessages.OfferCanceled) {
-            uint256 offerId = abi.decode(messagePayload, (uint256));
+            uint256 offerId = abi.decode(payload, (uint256));
 
             if (chain != offers[offerId].sourceChain) {
-                revert InvalidChain(offers[offerId].targetChain);
+                revert InvalidChain(chain);
             }
 
             emit OfferCanceled(offerId);
