@@ -131,7 +131,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         if (msg.value < cost) {
             revert InsufficientValue(msg.value, cost);
         }
-        if (_otherOtcMarkets[targetChain] == address(0) || targetChain == chain) {
+        if (_otherOtcMarkets[targetChain] == address(0)) {
             revert InvalidChain(targetChain);
         }
         if (sourceTokenAmount == 0 || exchangeRate == 0) {
