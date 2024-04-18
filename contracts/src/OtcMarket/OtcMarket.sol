@@ -14,7 +14,7 @@ import {IOtcMarket} from "./IOtcMarket.sol";
 /**
  * @dev See {IOtcMarket}.
  */
-contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
+abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
     uint256 public constant GAS_LIMIT = 100_000_000;
 
     uint16 public immutable chain;
@@ -29,7 +29,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
     }
 
-    mapping(uint16 chain => address otcMarket) private _otherOtcMarkets;
+    mapping(uint16 chain => address otcMarket) internal _otherOtcMarkets;
     mapping(uint256 offerId => Offer) public offers;
 
     function listOtcMarket(uint16 targetChain, address otcMarket) public onlyOwner {
@@ -127,7 +127,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         uint256 sourceTokenAmount,
         uint256 exchangeRate,
         uint256 cost
-    ) private view {
+    ) internal view virtual {
         if (msg.value < cost) {
             revert InsufficientValue(msg.value, cost);
         }
@@ -156,7 +156,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         );
     }
 
-    function _receiveOffer(uint256 offerId, Offer memory offer) private {
+    function _receiveOffer(uint256 offerId, Offer memory offer) internal virtual {
         offers[offerId] = offer;
 
         emit OfferCreated(
@@ -191,7 +191,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         _acceptOffer(cost, offerId);
     }
 
-    function _acceptOffer(uint256 cost, uint256 offerId) private {
+    function _acceptOffer(uint256 cost, uint256 offerId) internal virtual {
         Offer storage offer = offers[offerId];
         address buyer = msg.sender;
 
@@ -272,7 +272,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         );
     }
 
-    function _cancelOffer(uint256 cost, uint256 offerId) private {
+    function _cancelOffer(uint256 cost, uint256 offerId) internal virtual {
         uint16 sourceChain = offers[offerId].sourceChain;
 
         delete offers[offerId];
@@ -294,7 +294,7 @@ contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
     }
     //////////// CANCEL > ////////////
 
-    function _closeOffer(uint256 offerId, address account) private {
+    function _closeOffer(uint256 offerId, address account) internal virtual {
         IERC20(offers[offerId].sourceTokenAddress).transfer(
             account,
             offers[offerId].sourceTokenAmount
