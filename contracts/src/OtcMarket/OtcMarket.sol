@@ -36,17 +36,6 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         _otherOtcMarkets[targetChain] = otcMarket;
     }
 
-    function quoteCrossChainDelivery(
-        uint16 targetChain,
-        uint256 receiverValue
-    ) public view returns (uint256 cost) {
-        (cost, ) = wormholeRelayer.quoteEVMDeliveryPrice(targetChain, receiverValue, GAS_LIMIT);
-    }
-
-    function quoteCrossChainDelivery(uint16 targetChain) public view returns (uint256 cost) {
-        return quoteCrossChainDelivery(targetChain, 0);
-    }
-
     function hashOffer(
         address sellerSourceAddress,
         uint16 sourceChain,
@@ -118,8 +107,17 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             exchangeRate
         );
 
-        IERC20(sourceTokenAddress).transferFrom(msg.sender, address(this), sourceTokenAmount);
-        _sendCreateOfferMessage(cost, newOfferId);
+        IERC20(sourceTokenAddress).transferFrom(
+            sellerSourceAddress,
+            address(this),
+            sourceTokenAmount
+        );
+
+        bytes memory payload = abi.encode(
+            CrossChainMessages.OfferCreated,
+            abi.encode(newOfferId, offers[newOfferId])
+        );
+        _sendWormholeMessage(payload, targetChain, cost);
     }
 
     function _validateOfferParams(
@@ -137,23 +135,6 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         if (sourceTokenAmount == 0 || exchangeRate == 0) {
             revert InvalidPrice(sourceTokenAmount, exchangeRate);
         }
-    }
-
-    function _sendCreateOfferMessage(uint256 cost, uint256 offerId) private {
-        Offer storage offer = offers[offerId];
-
-        bytes memory payload = abi.encode(
-            CrossChainMessages.OfferCreated,
-            abi.encode(offerId, offer)
-        );
-
-        wormholeRelayer.sendPayloadToEvm{value: cost}(
-            offer.targetChain,
-            _otherOtcMarkets[offer.targetChain],
-            payload,
-            0,
-            GAS_LIMIT
-        );
     }
 
     function _receiveOffer(uint256 offerId, Offer memory offer) internal virtual {
@@ -209,27 +190,12 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         delete offers[offerId];
 
         emit OfferAccepted(offerId, buyer);
-        _sendAcceptOfferMessage(cost, offerId, sourceChain, buyer);
-    }
 
-    function _sendAcceptOfferMessage(
-        uint256 cost,
-        uint256 offerId,
-        uint16 sourceChain,
-        address buyer
-    ) private {
         bytes memory payload = abi.encode(
             CrossChainMessages.OfferAccepted,
             abi.encode(offerId, buyer)
         );
-
-        wormholeRelayer.sendPayloadToEvm{value: cost}(
-            sourceChain,
-            _otherOtcMarkets[sourceChain],
-            payload,
-            0,
-            GAS_LIMIT
-        );
+        _sendWormholeMessage(payload, sourceChain, cost);
     }
     //////////// ACCEPT > ////////////
 
@@ -248,28 +214,11 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             revert OnlySeller(msg.sender);
         }
 
-        _sendCancelOfferAppealMessage(cost, targetCost, offerId);
-    }
-
-    function _sendCancelOfferAppealMessage(
-        uint256 cost,
-        uint256 targetCost,
-        uint256 offerId
-    ) private {
-        uint16 targetChain = offers[offerId].targetChain;
-
         bytes memory payload = abi.encode(
             CrossChainMessages.OfferCancelAppeal,
             abi.encode(offerId)
         );
-
-        wormholeRelayer.sendPayloadToEvm{value: cost}(
-            targetChain,
-            _otherOtcMarkets[targetChain],
-            payload,
-            targetCost,
-            GAS_LIMIT
-        );
+        _sendWormholeMessage(payload, offers[offerId].targetChain, cost, targetCost);
     }
 
     function _cancelOffer(uint256 cost, uint256 offerId) internal virtual {
@@ -278,19 +227,9 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         delete offers[offerId];
 
         emit OfferCanceled(offerId);
-        _sendCancelOfferMessage(cost, offerId, sourceChain);
-    }
 
-    function _sendCancelOfferMessage(uint256 cost, uint256 offerId, uint16 sourceChain) private {
         bytes memory payload = abi.encode(CrossChainMessages.OfferCanceled, abi.encode(offerId));
-
-        wormholeRelayer.sendPayloadToEvm{value: cost}(
-            sourceChain,
-            _otherOtcMarkets[sourceChain],
-            payload,
-            0,
-            GAS_LIMIT
-        );
+        _sendWormholeMessage(payload, sourceChain, cost, 0);
     }
     //////////// CANCEL > ////////////
 
@@ -301,6 +240,43 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         );
 
         delete offers[offerId];
+    }
+
+    ////////////// < WORMHOLE ////////////
+    function quoteCrossChainDelivery(
+        uint16 targetChain,
+        uint256 receiverValue
+    ) public view virtual returns (uint256 cost) {
+        (cost, ) = wormholeRelayer.quoteEVMDeliveryPrice(targetChain, receiverValue, GAS_LIMIT);
+    }
+
+    function quoteCrossChainDelivery(
+        uint16 targetChain
+    ) public view virtual returns (uint256 cost) {
+        return quoteCrossChainDelivery(targetChain, 0);
+    }
+
+    function _sendWormholeMessage(
+        bytes memory payload,
+        uint16 targetChain,
+        uint256 cost,
+        uint256 targetCost
+    ) internal virtual {
+        wormholeRelayer.sendPayloadToEvm{value: cost}(
+            targetChain,
+            _otherOtcMarkets[targetChain],
+            payload,
+            targetCost,
+            GAS_LIMIT
+        );
+    }
+
+    function _sendWormholeMessage(
+        bytes memory payload,
+        uint16 targetChain,
+        uint256 cost
+    ) internal virtual {
+        _sendWormholeMessage(payload, targetChain, cost, 0);
     }
 
     function receiveWormholeMessages(
@@ -373,4 +349,5 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             revert UnsupportedMessage();
         }
     }
+    ////////////// WORMHOLE > ////////////
 }
