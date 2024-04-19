@@ -1,12 +1,20 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createWeb3Modal } from '@web3modal/wagmi/react';
 import { ThemeProvider } from 'next-themes';
 import { WagmiProvider } from 'wagmi';
 import { Toaster } from '@/components/ui/sonner';
-import { config } from '@/config/wagmi';
+import { config, projectId } from '@/config/wagmi';
 
 const queryClient = new QueryClient();
+
+createWeb3Modal({
+  themeMode: 'dark',
+  wagmiConfig: config,
+  projectId,
+  enableAnalytics: true, // Optional - defaults to your Cloud configuration
+});
 
 export default function Providers({
   children,
