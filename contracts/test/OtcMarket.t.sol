@@ -11,49 +11,6 @@ import {WormholeRelayerTrippleTest} from "./WormholeRelayerTrippleTest.sol";
 import "wormhole-solidity-sdk/Utils.sol";
 import "forge-std/Test.sol";
 
-contract TestOtcMarket is MyOtcMarket {
-    address trustedRelayer;
-
-    constructor(
-        uint16 chain,
-        address initialOwner,
-        address wormholeRelayer
-    ) MyOtcMarket(chain, initialOwner, wormholeRelayer) {
-        trustedRelayer = initialOwner;
-    }
-
-    function receiveWormholeMessages(
-        bytes memory payload,
-        bytes[] memory,
-        bytes32 sourceAddress,
-        uint16 sourceChain,
-        bytes32
-    ) public payable virtual override {
-        address account = msg.sender;
-        if (account != address(wormholeRelayer) && account != trustedRelayer) {
-            revert OnlyWormholeRelayer(account);
-        }
-
-        address sender = fromWormholeFormat(sourceAddress);
-        if ((otherOtcMarkets[sourceChain].otcMarket) != sender) {
-            revert OnlyOtc(sender);
-        }
-
-        uint256 lastReceivedMessage = otherOtcMarkets[sourceChain].lastReceivedMessage;
-        (
-            uint256 recentReceivedMessage,
-            CrossChainMessages messageType,
-            bytes memory messagePayload
-        ) = abi.decode(payload, (uint256, CrossChainMessages, bytes));
-        if (lastReceivedMessage != recentReceivedMessage) {
-            revert InvalidMessageOrder(recentReceivedMessage);
-        }
-        otherOtcMarkets[sourceChain].lastReceivedMessage = uint256(keccak256(payload));
-
-        _receiveWormholeMessages(messageType, messagePayload);
-    }
-}
-
 contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
     OtcMarket public firstOtcMarket;
     OtcMarket public secondOtcMarket;
@@ -70,19 +27,19 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
     constructor() WormholeRelayerTrippleTest([uint16(14), uint16(4), uint16(6)]) {}
 
     function setUpFirst() public override {
-        firstOtcMarket = new TestOtcMarket(firstChain, address(this), address(firstRelayer));
+        firstOtcMarket = new MyOtcMarket(firstChain, address(this), address(firstRelayer));
         firstToken = new MyToken(address(this));
         firstToken.mint(address(this), MINTED);
     }
 
     function setUpSecond() public override {
-        secondOtcMarket = new TestOtcMarket(secondChain, address(this), address(secondRelayer));
+        secondOtcMarket = new MyOtcMarket(secondChain, address(this), address(secondRelayer));
         secondToken = new MyToken(address(this));
         secondToken.mint(address(this), MINTED);
     }
 
     function setUpThird() public override {
-        thirdOtcMarket = new TestOtcMarket(thirdChain, address(this), address(thirdRelayer));
+        thirdOtcMarket = new MyOtcMarket(thirdChain, address(this), address(thirdRelayer));
         thirdToken = new MyToken(address(this));
         thirdToken.mint(address(this), MINTED);
     }
@@ -364,6 +321,7 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
 
         address fakeOtc = makeAddr("fake otc");
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.OnlyOtc.selector, fakeOtc));
+        vm.prank(address(firstRelayer));
         firstOtcMarket.receiveWormholeMessages(
             payload,
             new bytes[](0),
@@ -401,6 +359,7 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
         );
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, thirdChain));
+        vm.prank(address(thirdRelayer));
         thirdOtcMarket.receiveWormholeMessages(
             payload,
             new bytes[](0),
