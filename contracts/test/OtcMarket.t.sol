@@ -28,21 +28,27 @@ contract TestOtcMarket is MyOtcMarket {
         bytes32 sourceAddress,
         uint16 sourceChain,
         bytes32
-    ) public payable override {
+    ) public payable virtual override {
         address account = msg.sender;
         if (account != address(wormholeRelayer) && account != trustedRelayer) {
             revert OnlyWormholeRelayer(account);
         }
 
-        (CrossChainMessages messageType, bytes memory messagePayload) = abi.decode(
-            payload,
-            (CrossChainMessages, bytes)
-        );
-
         address sender = fromWormholeFormat(sourceAddress);
-        if (_otherOtcMarkets[sourceChain].otcMarket != sender) {
+        if ((otherOtcMarkets[sourceChain].otcMarket) != sender) {
             revert OnlyOtc(sender);
         }
+
+        uint256 lastReceivedMessage = otherOtcMarkets[sourceChain].lastReceivedMessage;
+        (
+            uint256 recentReceivedMessage,
+            CrossChainMessages messageType,
+            bytes memory messagePayload
+        ) = abi.decode(payload, (uint256, CrossChainMessages, bytes));
+        if (lastReceivedMessage != recentReceivedMessage) {
+            revert InvalidMessageOrder(recentReceivedMessage);
+        }
+        otherOtcMarkets[sourceChain].lastReceivedMessage = uint256(keccak256(payload));
 
         _receiveWormholeMessages(messageType, messagePayload);
     }
@@ -92,7 +98,7 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
         thirdOtcMarket.listOtcMarket(secondChain, address(secondOtcMarket));
     }
 
-    function testCreateOffer() public {
+    function testCreateOffer_Basic() public {
         vm.selectFork(0);
         firstToken.approve(address(firstOtcMarket), AMOUNT);
         uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
@@ -389,6 +395,7 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
             EXCHANGE_RATE
         );
         bytes memory payload = abi.encode(
+            0,
             IOtcMarket.CrossChainMessages.OfferCreated,
             abi.encode(offerId, offer)
         );
