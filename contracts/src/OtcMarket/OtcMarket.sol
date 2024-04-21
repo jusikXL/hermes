@@ -29,11 +29,12 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         wormholeRelayer = IWormholeRelayer(_wormholeRelayer);
     }
 
-    mapping(uint16 chain => ChainInfo) internal _otherOtcMarkets;
+    mapping(uint16 chain => ChainInfo) public otherOtcMarkets;
     mapping(uint256 offerId => Offer) public offers;
 
     function listOtcMarket(uint16 targetChain, address otcMarket) public onlyOwner {
-        _otherOtcMarkets[targetChain] = ChainInfo(otcMarket, 0, 0);
+        otherOtcMarkets[targetChain] = ChainInfo(otcMarket, uint256(0), uint256(0));
+        emit OtcMarketListed(targetChain, otcMarket);
     }
 
     function hashOffer(
@@ -113,11 +114,9 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             sourceTokenAmount
         );
 
-        bytes memory payload = abi.encode(
-            CrossChainMessages.OfferCreated,
-            abi.encode(newOfferId, offers[newOfferId])
-        );
-        _sendWormholeMessage(payload, targetChain, cost);
+        bytes memory messagePayload = abi.encode(newOfferId, offers[newOfferId]);
+        //bytes memory messagePayload = abi.encode(newOfferId);
+        _sendWormholeMessage(CrossChainMessages.OfferCreated, messagePayload, targetChain, cost);
     }
 
     function _validateOfferParams(
@@ -129,7 +128,7 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         if (msg.value < cost) {
             revert InsufficientValue(msg.value, cost);
         }
-        if (_otherOtcMarkets[targetChain].otcMarket == address(0)) {
+        if (otherOtcMarkets[targetChain].otcMarket == address(0)) {
             revert InvalidChain(targetChain);
         }
         if (sourceTokenAmount == 0 || exchangeRate == 0) {
@@ -162,6 +161,7 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         if (msg.value < cost) {
             revert InsufficientValue(msg.value, cost);
         }
+
         if (chain != offer.targetChain) {
             revert InvalidChain(chain);
         }
@@ -191,11 +191,9 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
 
         emit OfferAccepted(offerId, buyer);
 
-        bytes memory payload = abi.encode(
-            CrossChainMessages.OfferAccepted,
-            abi.encode(offerId, buyer)
-        );
-        _sendWormholeMessage(payload, sourceChain, cost);
+        bytes memory messagePayload = abi.encode(offerId, buyer);
+
+        _sendWormholeMessage(CrossChainMessages.OfferAccepted, messagePayload, sourceChain, cost);
     }
     //////////// ACCEPT > ////////////
 
@@ -214,11 +212,15 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             revert OnlySeller(msg.sender);
         }
 
-        bytes memory payload = abi.encode(
+        bytes memory messagePayload = abi.encode(offerId);
+
+        _sendWormholeMessage(
             CrossChainMessages.OfferCancelAppeal,
-            abi.encode(offerId)
+            messagePayload,
+            offers[offerId].targetChain,
+            cost,
+            targetCost
         );
-        _sendWormholeMessage(payload, offers[offerId].targetChain, cost, targetCost);
     }
 
     function _cancelOffer(uint256 cost, uint256 offerId) internal virtual {
@@ -228,8 +230,8 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
 
         emit OfferCanceled(offerId);
 
-        bytes memory payload = abi.encode(CrossChainMessages.OfferCanceled, abi.encode(offerId));
-        _sendWormholeMessage(payload, sourceChain, cost, 0);
+        bytes memory messagePayload = abi.encode(offerId);
+        _sendWormholeMessage(CrossChainMessages.OfferCanceled, messagePayload, sourceChain, cost);
     }
     //////////// CANCEL > ////////////
 
@@ -257,14 +259,23 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
     }
 
     function _sendWormholeMessage(
-        bytes memory payload,
+        CrossChainMessages messageType,
+        bytes memory messagePayload,
         uint16 targetChain,
         uint256 cost,
         uint256 targetCost
     ) internal virtual {
+        bytes memory payload = abi.encode(
+            otherOtcMarkets[targetChain].lastEmittedMessage,
+            messageType,
+            messagePayload
+        );
+
+        otherOtcMarkets[targetChain].lastEmittedMessage = uint256(keccak256(payload));
+
         wormholeRelayer.sendPayloadToEvm{value: cost}(
             targetChain,
-            _otherOtcMarkets[targetChain].otcMarket,
+            otherOtcMarkets[targetChain].otcMarket,
             payload,
             targetCost,
             GAS_LIMIT
@@ -272,12 +283,12 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
     }
 
     function _sendWormholeMessage(
-        bytes memory payload,
+        CrossChainMessages messageType,
+        bytes memory messagePayload,
         uint16 targetChain,
         uint256 cost
     ) internal virtual {
-        _otherOtcMarkets[targetChain].lastOutgoingMessage = uint256(keccak256(payload));
-        _sendWormholeMessage(payload, targetChain, cost, 0);
+        _sendWormholeMessage(messageType, messagePayload, targetChain, cost, 0);
     }
 
     function receiveWormholeMessages(
@@ -291,23 +302,21 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
             revert OnlyWormholeRelayer(msg.sender);
         }
 
-        //uint256 storage lastIncommingMessage = _otherOtcMarkets[sourceChain].lastIncommingMessage;
-        // Todo: check last incomming message encoded in message
-        // if (_otherOtcMarkets[sourceChain].lastIncommingMessage != 0) {
-        //     revert;
-        // }
-        _otherOtcMarkets[sourceChain].lastIncomingMessage = uint256(keccak256(payload));
-        ///
-
-        (CrossChainMessages messageType, bytes memory messagePayload) = abi.decode(
-            payload,
-            (CrossChainMessages, bytes)
-        );
-
         address sender = fromWormholeFormat(sourceAddress);
-        if ((_otherOtcMarkets[sourceChain].otcMarket) != sender) {
+        if ((otherOtcMarkets[sourceChain].otcMarket) != sender) {
             revert OnlyOtc(sender);
         }
+
+        uint256 lastReceivedMessage = otherOtcMarkets[sourceChain].lastReceivedMessage;
+        (
+            uint256 recentReceivedMessage,
+            CrossChainMessages messageType,
+            bytes memory messagePayload
+        ) = abi.decode(payload, (uint256, CrossChainMessages, bytes));
+        if (lastReceivedMessage != recentReceivedMessage) {
+            revert InvalidMessageOrder(recentReceivedMessage);
+        }
+        otherOtcMarkets[sourceChain].lastReceivedMessage = uint256(keccak256(payload));
 
         _receiveWormholeMessages(messageType, messagePayload);
     }

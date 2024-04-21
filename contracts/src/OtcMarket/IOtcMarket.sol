@@ -25,9 +25,15 @@ interface IOtcMarket {
 
     struct ChainInfo {
         address otcMarket;
-        uint256 lastOutgoingMessage;
-        uint256 lastIncomingMessage;
+        uint256 lastEmittedMessage;
+        uint256 lastReceivedMessage;
     }
+
+    /**
+     * @dev The message before the last emmited message does not match the last received one.
+     * The received message shall execute later.
+     */
+    error InvalidMessageOrder(uint256 recentReceivedMessage);
 
     /**
      * @dev Zero as amount or exchange rate
@@ -83,6 +89,12 @@ interface IOtcMarket {
      * @dev Received cross chain message is not supported.
      */
     error UnsupportedMessage();
+
+    /**
+     * @dev Emmited when
+     * - otc market is listed or updated
+     */
+    event OtcMarketListed(uint16 chain, address otcMarket);
 
     /**
      * @dev Emmited when
