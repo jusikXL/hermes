@@ -55,7 +55,7 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
         thirdOtcMarket.listOtcMarket(secondChain, address(secondOtcMarket));
     }
 
-    function testCreateOffer_Basic() public {
+    function testCreateOffer_Positive() public {
         vm.selectFork(0);
         firstToken.approve(address(firstOtcMarket), AMOUNT);
         uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
@@ -369,7 +369,8 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
         );
     }
 
-    function testAcceptOffer() public {
+    function testAcceptOffer_Positive() public {
+        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
         vm.recordLogs();
         address seller = makeAddr("seller");
         address buyer = makeAddr("buyer");
@@ -379,7 +380,7 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
 
         vm.selectFork(secondFork);
         vm.deal(buyer, 10 ether);
-        secondToken.mint(buyer, AMOUNT * EXCHANGE_RATE);
+        secondToken.mint(buyer, ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE);
 
         vm.selectFork(firstFork);
         vm.startPrank(seller);
@@ -397,43 +398,47 @@ contract OtcMarketTest is WormholeRelayerTrippleTest, IERC20Errors {
         vm.selectFork(secondFork);
 
         vm.startPrank(buyer);
-        secondToken.approve(address(secondOtcMarket), AMOUNT * EXCHANGE_RATE);
+        secondToken.approve(address(secondOtcMarket), ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE);
 
         uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
 
         vm.expectEmit(true, true, false, false, address(secondOtcMarket));
-        emit IOtcMarket.OfferAccepted(offerId, buyer);
+        emit IOtcMarket.OfferAccepted(offerId, buyer, ACCEPT_OFFER_AMOUNT);
 
-        secondOtcMarket.acceptOffer{value: cost}(offerId);
+        secondOtcMarket.acceptOffer{value: cost}(offerId, ACCEPT_OFFER_AMOUNT);
         vm.stopPrank();
 
         vm.selectFork(firstFork);
 
         vm.expectEmit(true, true, false, false, address(firstOtcMarket));
-        emit IOtcMarket.OfferAccepted(offerId, buyer);
+        emit IOtcMarket.OfferAccepted(offerId, buyer, ACCEPT_OFFER_AMOUNT);
 
         vm.selectFork(secondFork);
         performDelivery();
 
         // check that offer was deleted on both chains
         // check balances were modified
-        uint256 fee = (AMOUNT * EXCHANGE_RATE) / 100;
+        uint256 fee = 1 ether;
         uint256 sellerBalance = secondToken.balanceOf(seller);
         uint256 buyerBalance = secondToken.balanceOf(buyer);
-        (seller, , , , , , , ) = secondOtcMarket.offers(offerId);
+        (, , , , , , uint256 sourceTokenAmount, ) = secondOtcMarket.offers(offerId);
 
-        assertEq(seller, address(0));
-        assertEq(buyerBalance, 0);
-        assertEq(sellerBalance, AMOUNT * EXCHANGE_RATE - fee);
+        assertEq(sourceTokenAmount, AMOUNT - ACCEPT_OFFER_AMOUNT, "target chain offer amount");
+        assertEq(buyerBalance, 0, "target chain buyer balance");
+        assertEq(
+            sellerBalance,
+            ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE - fee,
+            "target chain seller balance"
+        );
 
         vm.selectFork(firstFork);
         sellerBalance = firstToken.balanceOf(seller);
         buyerBalance = firstToken.balanceOf(buyer);
-        (seller, , , , , , , ) = firstOtcMarket.offers(offerId);
+        (, , , , , , sourceTokenAmount, ) = firstOtcMarket.offers(offerId);
 
-        assertEq(seller, address(0));
-        assertEq(buyerBalance, AMOUNT);
-        assertEq(sellerBalance, 0);
+        assertEq(sourceTokenAmount, AMOUNT - ACCEPT_OFFER_AMOUNT, "source chain offer amount");
+        assertEq(buyerBalance, ACCEPT_OFFER_AMOUNT, "source chain buyer balance");
+        assertEq(sellerBalance, 0, "source chain seller balance");
     }
 
     function testCancelOffer() public {
