@@ -41,6 +41,11 @@ interface IOtcMarket {
     error InvalidPrice(uint256 amount, uint256 exchangeRate);
 
     /**
+     * @dev Tried to accept an offer for an amount exceeding the available offer amount.
+     */
+    error ExcessiveAmount(uint256 amount, uint256 offerAmount);
+
+    /**
      * @dev Provided value is less than required.
      */
     error InsufficientValue(uint256 provided, uint256 required);
@@ -118,7 +123,7 @@ interface IOtcMarket {
      * - offer is accepted on target chain
      * - offer accepted message came to source chain.
      */
-    event OfferAccepted(uint256 indexed offerId, address indexed buyer);
+    event OfferAccepted(uint256 indexed offerId, address indexed buyer, uint256 sourceTokenAmount);
 
     /**
      * @dev Emmited when
@@ -154,7 +159,7 @@ interface IOtcMarket {
     /**
      * @dev Function to accept the offer.
      */
-    function acceptOffer(uint256 offerId) external payable;
+    function acceptOffer(uint256 offerId, uint256 sourceTokenAmount) external payable;
 
     /**
      * @dev Function to cancel the offer.
