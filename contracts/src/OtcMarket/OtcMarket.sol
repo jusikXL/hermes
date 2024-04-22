@@ -136,7 +136,7 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         }
     }
 
-    function _receiveOffer(uint256 offerId, Offer memory offer) internal virtual {
+    function _receiveCreateOffer(uint256 offerId, Offer memory offer) internal virtual {
         offers[offerId] = offer;
 
         emit OfferCreated(
@@ -154,46 +154,70 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
     //////////// CREATE > ////////////
 
     //////////// < ACCEPT ////////////
-    function acceptOffer(uint256 offerId) public payable virtual override {
+    function acceptOffer(
+        uint256 offerId,
+        uint256 sourceTokenAmount
+    ) public payable virtual override {
         Offer storage offer = offers[offerId];
 
         uint256 cost = quoteCrossChainDelivery(offer.sourceChain);
         if (msg.value < cost) {
             revert InsufficientValue(msg.value, cost);
         }
-
         if (chain != offer.targetChain) {
             revert InvalidChain(chain);
         }
         if (offer.sellerSourceAddress == address(0)) {
             revert NonexistentOffer(offerId);
         }
+        if (offer.sourceTokenAmount < sourceTokenAmount) {
+            revert ExcessiveAmount(sourceTokenAmount, offer.sourceTokenAmount);
+        }
 
-        _acceptOffer(cost, offerId);
+        _acceptOffer(cost, offerId, sourceTokenAmount);
     }
 
-    function _acceptOffer(uint256 cost, uint256 offerId) internal virtual {
+    function _acceptOffer(
+        uint256 cost,
+        uint256 offerId,
+        uint256 sourceTokenAmount
+    ) internal virtual {
         Offer storage offer = offers[offerId];
         address buyer = msg.sender;
 
-        uint256 amount = offer.sourceTokenAmount * offer.exchangeRate;
-        uint256 fee = amount > 100 ether ? amount / 100 : 1 ether;
+        uint256 targetTokenAmount = sourceTokenAmount * offer.exchangeRate;
+        uint256 fee = targetTokenAmount > 100 ether ? targetTokenAmount / 100 : 1 ether; // $1 or 1% fee
 
-        uint16 sourceChain = offer.sourceChain;
+        offer.sourceTokenAmount -= sourceTokenAmount;
+        emit OfferAccepted(offerId, buyer, sourceTokenAmount);
 
         IERC20(offer.targetTokenAddress).transferFrom(buyer, address(this), fee);
         IERC20(offer.targetTokenAddress).transferFrom(
             buyer,
             offer.sellerTargetAddress,
-            amount - fee
+            targetTokenAmount - fee
         );
-        delete offers[offerId];
 
-        emit OfferAccepted(offerId, buyer);
+        bytes memory messagePayload = abi.encode(offerId, buyer, sourceTokenAmount);
+        _sendWormholeMessage(
+            CrossChainMessages.OfferAccepted,
+            messagePayload,
+            offer.sourceChain,
+            cost
+        );
+    }
 
-        bytes memory messagePayload = abi.encode(offerId, buyer);
+    function _receiveAcceptOffer(
+        uint256 offerId,
+        address buyer,
+        uint256 sourceTokenAmount
+    ) internal virtual {
+        Offer storage offer = offers[offerId];
 
-        _sendWormholeMessage(CrossChainMessages.OfferAccepted, messagePayload, sourceChain, cost);
+        offer.sourceTokenAmount -= sourceTokenAmount;
+        emit OfferAccepted(offerId, buyer, sourceTokenAmount);
+
+        IERC20(offer.sourceTokenAddress).transfer(buyer, sourceTokenAmount);
     }
     //////////// ACCEPT > ////////////
 
@@ -233,16 +257,20 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         bytes memory messagePayload = abi.encode(offerId);
         _sendWormholeMessage(CrossChainMessages.OfferCanceled, messagePayload, sourceChain, cost);
     }
-    //////////// CANCEL > ////////////
 
-    function _closeOffer(uint256 offerId, address account) internal virtual {
-        IERC20(offers[offerId].sourceTokenAddress).transfer(
-            account,
-            offers[offerId].sourceTokenAmount
+    function _receiveCancelOffer(uint256 offerId) internal virtual {
+        Offer storage offer = offers[offerId];
+
+        emit OfferCanceled(offerId);
+
+        IERC20(offer.sourceTokenAddress).transfer(
+            offer.sellerSourceAddress,
+            offer.sourceTokenAmount
         );
 
         delete offers[offerId];
     }
+    //////////// CANCEL > ////////////
 
     ////////////// < WORMHOLE ////////////
     function quoteCrossChainDelivery(
@@ -332,16 +360,18 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
                 revert InvalidChain(chain);
             }
 
-            _receiveOffer(offerId, offer);
+            _receiveCreateOffer(offerId, offer);
         } else if (messageType == CrossChainMessages.OfferAccepted) {
-            (uint256 offerId, address buyer) = abi.decode(payload, (uint256, address));
+            (uint256 offerId, address buyer, uint256 sourceTokenAmount) = abi.decode(
+                payload,
+                (uint256, address, uint256)
+            );
 
             if (chain != offers[offerId].sourceChain) {
                 revert InvalidChain(chain);
             }
 
-            emit OfferAccepted(offerId, buyer);
-            _closeOffer(offerId, buyer);
+            _receiveAcceptOffer(offerId, buyer, sourceTokenAmount);
         } else if (messageType == CrossChainMessages.OfferCancelAppeal) {
             uint256 offerId = abi.decode(payload, (uint256));
 
@@ -361,8 +391,7 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
                 revert InvalidChain(chain);
             }
 
-            emit OfferCanceled(offerId);
-            _closeOffer(offerId, offers[offerId].sellerSourceAddress);
+            _receiveCancelOffer(offerId);
         } else {
             revert UnsupportedMessage();
         }
