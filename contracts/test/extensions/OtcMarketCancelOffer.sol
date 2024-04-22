@@ -117,7 +117,7 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         firstOtcMarket.cancelOffer{value: 0}(offerId, 0);
     }
 
-    function testCancelOffer_InvalidChain() public {
+    function testCancelOffer_InvalidChainAppeal() public {
         vm.recordLogs();
 
         uint256 offerId = _createOfferFixture(
@@ -167,5 +167,71 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.OnlySeller.selector, fakeSeller));
         vm.prank(fakeSeller);
         firstOtcMarket.cancelOffer{value: cost}(offerId, targetCost);
+    }
+
+    function testCancelOffer_InvalidChainAppealReceived() public {
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        bytes memory payload = abi.encode(
+            0,
+            IOtcMarket.CrossChainMessages.OfferCancelAppeal,
+            abi.encode(offerId)
+        );
+
+        vm.selectFork(thirdFork);
+        vm.prank(address(thirdRelayer));
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, thirdChain));
+        thirdOtcMarket.receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            toWormholeFormat(address(secondOtcMarket)),
+            secondChain,
+            bytes32(0)
+        );
+    }
+
+    function testCancelOffer_InvalidChainCancelReceived() public {
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        bytes memory payload = abi.encode(
+            0,
+            IOtcMarket.CrossChainMessages.OfferCanceled,
+            abi.encode(offerId)
+        );
+
+        vm.selectFork(thirdFork);
+        vm.prank(address(thirdRelayer));
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, thirdChain));
+        thirdOtcMarket.receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            toWormholeFormat(address(secondOtcMarket)),
+            secondChain,
+            bytes32(0)
+        );
     }
 }
