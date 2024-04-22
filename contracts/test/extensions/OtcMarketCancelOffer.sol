@@ -58,4 +58,114 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         assertEq(offerSeller, address(0));
         assertEq(sellerBalance, AMOUNT);
     }
+
+    function testCancelOffer_InvalidTargetCost() public {
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+
+        firstOtcMarket.cancelOffer{value: cost}(offerId, 0);
+        (, uint256 lastSourceEmittedMessage, uint256 lastSourceIncommingMessage) = firstOtcMarket
+            .otherOtcMarkets(secondChain);
+        performDelivery();
+
+        vm.selectFork(secondFork);
+
+        (address offerSeller, , , , , , , ) = secondOtcMarket.offers(offerId);
+        (, , uint256 lastTargetReceivedMessage) = secondOtcMarket.otherOtcMarkets(firstChain);
+        assertNotEq(offerSeller, address(0), "Target: offer was not deleted");
+        assertEq(lastSourceEmittedMessage, lastTargetReceivedMessage);
+
+        performDelivery();
+
+        vm.selectFork(firstFork);
+
+        (offerSeller, , , , , , , ) = firstOtcMarket.offers(offerId);
+        (, , uint256 lastSourceReceivedMessage) = firstOtcMarket.otherOtcMarkets(secondChain);
+        assertEq(lastSourceIncommingMessage, lastSourceReceivedMessage);
+        assertNotEq(offerSeller, address(0), "Source: offer was not deleted");
+    }
+
+    function testCancelOffer_InsufficientValue() public {
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InsufficientValue.selector, 0, cost));
+        firstOtcMarket.cancelOffer{value: 0}(offerId, 0);
+    }
+
+    function testCancelOffer_InvalidChain() public {
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        uint256 targetCost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+
+        vm.selectFork(secondFork);
+
+        uint256 sourceCost = secondOtcMarket.quoteCrossChainDelivery(firstChain, targetCost);
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, secondChain));
+        secondOtcMarket.cancelOffer{value: sourceCost}(offerId, targetCost);
+    }
+
+    function testCancelOffer_OnlySeller() public {
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        vm.selectFork(secondFork);
+        uint256 targetCost = secondOtcMarket.quoteCrossChainDelivery(secondChain);
+
+        vm.selectFork(firstFork);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, targetCost);
+
+        address fakeSeller = makeAddr("fake seller");
+        vm.deal(fakeSeller, 10 ether);
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.OnlySeller.selector, fakeSeller));
+        vm.prank(fakeSeller);
+        firstOtcMarket.cancelOffer{value: cost}(offerId, targetCost);
+    }
 }
