@@ -15,7 +15,7 @@ import {IOtcMarket} from "./IOtcMarket.sol";
  * @dev See {IOtcMarket}.
  */
 abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
-    uint256 public constant GAS_LIMIT = 100_000_000;
+    uint256 public constant GAS_LIMIT = 200_000;
 
     uint16 public immutable chain;
     IWormholeRelayer public immutable wormholeRelayer;
@@ -115,7 +115,6 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         );
 
         bytes memory messagePayload = abi.encode(newOfferId, offers[newOfferId]);
-        //bytes memory messagePayload = abi.encode(newOfferId);
         _sendWormholeMessage(CrossChainMessages.OfferCreated, messagePayload, targetChain, cost);
     }
 
@@ -237,7 +236,6 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         }
 
         bytes memory messagePayload = abi.encode(offerId);
-
         _sendWormholeMessage(
             CrossChainMessages.OfferCancelAppeal,
             messagePayload,
@@ -375,15 +373,14 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         } else if (messageType == CrossChainMessages.OfferCancelAppeal) {
             uint256 offerId = abi.decode(payload, (uint256));
 
-            uint256 cost = quoteCrossChainDelivery(offers[offerId].sourceChain);
-            if (msg.value < cost) {
-                revert InsufficientValue(msg.value, cost);
-            }
             if (chain != offers[offerId].targetChain) {
                 revert InvalidChain(chain);
             }
 
-            _cancelOffer(cost, offerId);
+            uint256 cost = quoteCrossChainDelivery(offers[offerId].sourceChain);
+            if (msg.value >= cost) {
+                _cancelOffer(cost, offerId);
+            }
         } else if (messageType == CrossChainMessages.OfferCanceled) {
             uint256 offerId = abi.decode(payload, (uint256));
 
