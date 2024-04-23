@@ -158,6 +158,9 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         uint256 sourceTokenAmount
     ) public payable virtual override {
         Offer storage offer = offers[offerId];
+        if (offer.sellerSourceAddress == address(0)) {
+            revert NonexistentOffer(offerId);
+        }
 
         uint256 cost = quoteCrossChainDelivery(offer.sourceChain);
         if (msg.value < cost) {
@@ -165,9 +168,6 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         }
         if (chain != offer.targetChain) {
             revert InvalidChain(chain);
-        }
-        if (offer.sellerSourceAddress == address(0)) {
-            revert NonexistentOffer(offerId);
         }
         if (offer.sourceTokenAmount < sourceTokenAmount) {
             revert ExcessiveAmount(sourceTokenAmount, offer.sourceTokenAmount);
@@ -184,7 +184,7 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
         Offer storage offer = offers[offerId];
         address buyer = msg.sender;
 
-        uint256 targetTokenAmount = sourceTokenAmount * offer.exchangeRate;
+        uint256 targetTokenAmount = (sourceTokenAmount * offer.exchangeRate) / 1 ether;
         uint256 fee = targetTokenAmount > 100 ether ? targetTokenAmount / 100 : 1 ether; // $1 or 1% fee
 
         offer.sourceTokenAmount -= sourceTokenAmount;
@@ -223,6 +223,9 @@ abstract contract OtcMarket is IOtcMarket, IWormholeReceiver, Ownable {
     //////////// < CANCEL ////////////
     function cancelOffer(uint256 offerId, uint256 targetCost) public payable virtual override {
         Offer storage offer = offers[offerId];
+        if (offer.sellerSourceAddress == address(0)) {
+            revert NonexistentOffer(offerId);
+        }
 
         uint256 cost = quoteCrossChainDelivery(offer.targetChain, targetCost);
         if (msg.value < cost) {
