@@ -22,7 +22,7 @@ abstract contract OtcMarketCoreTest is WormholeRelayerTrippleTest, OtcMarketFixt
     MyToken public secondToken;
     MyToken public thirdToken;
 
-    uint256 public constant EXCHANGE_RATE = 2;
+    uint256 public constant EXCHANGE_RATE = 2 ether;
     uint256 public constant AMOUNT = 100 ether;
     uint256 public constant MINTED = 1000 ether;
 
