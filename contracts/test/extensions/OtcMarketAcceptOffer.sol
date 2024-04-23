@@ -15,7 +15,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
 
         vm.selectFork(secondFork);
         vm.deal(buyer, 10 ether);
-        secondToken.mint(buyer, ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE);
+        secondToken.mint(buyer, (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether);
 
         vm.selectFork(firstFork);
         vm.startPrank(seller);
@@ -35,7 +35,10 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         vm.selectFork(secondFork);
 
         vm.startPrank(buyer);
-        secondToken.approve(address(secondOtcMarket), ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE);
+        secondToken.approve(
+            address(secondOtcMarket),
+            (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether
+        );
 
         uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
 
@@ -52,8 +55,6 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
 
         vm.selectFork(secondFork);
         performDelivery();
-
-        // check that offer was deleted on both chains
         // check balances were modified
         uint256 fee = 1 ether;
         uint256 sellerBalance = secondToken.balanceOf(seller);
@@ -64,7 +65,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         assertEq(buyerBalance, 0, "target chain buyer balance");
         assertEq(
             sellerBalance,
-            ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE - fee,
+            (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether - fee,
             "target chain seller balance"
         );
 
@@ -76,5 +77,136 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         assertEq(sourceTokenAmount, AMOUNT - ACCEPT_OFFER_AMOUNT, "source chain offer amount");
         assertEq(buyerBalance, ACCEPT_OFFER_AMOUNT, "source chain buyer balance");
         assertEq(sellerBalance, 0, "source chain seller balance");
+    }
+
+    function testAcceptOffer_InsufficientValue() public {
+        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        vm.selectFork(secondFork);
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        secondToken.approve(address(secondOtcMarket), ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE);
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InsufficientValue.selector, 0, cost));
+        secondOtcMarket.acceptOffer{value: 0}(offerId, ACCEPT_OFFER_AMOUNT);
+    }
+
+    function testAcceptOffer_InvalidChain() public {
+        // accept offer from seller chain
+        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        vm.selectFork(secondFork);
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        vm.selectFork(firstFork);
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, firstChain));
+        firstOtcMarket.acceptOffer{value: cost}(offerId, ACCEPT_OFFER_AMOUNT);
+    }
+
+    function testAcceptOffer_NonexistentOffer() public {
+        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        vm.selectFork(secondFork);
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        secondToken.approve(address(secondOtcMarket), ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE);
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.NonexistentOffer.selector, offerId + 1));
+        secondOtcMarket.acceptOffer{value: cost}(offerId + 1, ACCEPT_OFFER_AMOUNT);
+    }
+
+    function testAcceptOffer_ExcessiveAmount() public {
+        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT * 2;
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        vm.selectFork(secondFork);
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        secondToken.approve(
+            address(secondOtcMarket),
+            (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IOtcMarket.ExcessiveAmount.selector, ACCEPT_OFFER_AMOUNT, AMOUNT)
+        );
+        secondOtcMarket.acceptOffer{value: cost}(offerId, ACCEPT_OFFER_AMOUNT);
+    }
+
+    function testAcceptOffer_InvalidChainReceined() public {
+        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        vm.selectFork(thirdFork);
+        bytes memory payload = abi.encode(
+            0,
+            IOtcMarket.CrossChainMessages.OfferAccepted,
+            abi.encode(offerId, address(this), ACCEPT_OFFER_AMOUNT)
+        );
+        vm.prank(address(thirdRelayer));
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, thirdChain));
+        thirdOtcMarket.receiveWormholeMessages(
+            payload,
+            new bytes[](0),
+            toWormholeFormat(address(secondOtcMarket)),
+            secondChain,
+            bytes32(0)
+        );
     }
 }
