@@ -59,6 +59,26 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         assertEq(sellerBalance, AMOUNT);
     }
 
+    function testCancelOffer_NonexistentOffer() public {
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            AMOUNT,
+            EXCHANGE_RATE
+        );
+        performDelivery();
+
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.NonexistentOffer.selector, offerId + 1));
+        firstOtcMarket.cancelOffer{value: cost}(offerId + 1, 0);
+    }
+
     function testCancelOffer_InvalidTargetCost() public {
         vm.recordLogs();
 
