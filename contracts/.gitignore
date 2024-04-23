@@ -5,43 +5,22 @@ node_modules
 /cache_hardhat
 /artifacts
 
-# TypeChain files
 /typechain
 /typechain-types
 
-# solidity-coverage files
 /coverage
 /coverage.json
 
-# Compiler files
+ignition/deployments
+
+# Foundry files
 cache/
 out/
 
-# Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/
 /broadcast/**/dry-run/
 
-# Docs
 docs/
 
-# Dotenv file
 .env
-
-node_modules
-.env
-
-# Hardhat files
-/cache
-/artifacts
-
-# TypeChain files
-/typechain
-/typechain-types
-
-# solidity-coverage files
-/coverage
-/coverage.json
-
-# Ignition files
-ignition/deployments
