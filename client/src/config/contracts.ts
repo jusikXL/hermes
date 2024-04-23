@@ -3,8 +3,8 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xFA261f2b4C4b97cd78CeAFD6d68b39C9095E8aE8)
- * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x43378Ec7c37C2150446C79E7B098F04a076fcC3D)
+ * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x3EB8F85aB7364bE9e10A898093fFe397870A2AE3)
+ * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x0D18B62A4e3f376fFAF5920a8ecbffce0e024539)
  */
 export const myTokenAbi = [
   {
@@ -248,17 +248,17 @@ export const myTokenAbi = [
 ] as const
 
 /**
- * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xFA261f2b4C4b97cd78CeAFD6d68b39C9095E8aE8)
- * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x43378Ec7c37C2150446C79E7B098F04a076fcC3D)
+ * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x3EB8F85aB7364bE9e10A898093fFe397870A2AE3)
+ * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x0D18B62A4e3f376fFAF5920a8ecbffce0e024539)
  */
 export const myTokenAddress = {
-  84532: '0xFA261f2b4C4b97cd78CeAFD6d68b39C9095E8aE8',
-  11155420: '0x43378Ec7c37C2150446C79E7B098F04a076fcC3D',
+  84532: '0x3EB8F85aB7364bE9e10A898093fFe397870A2AE3',
+  11155420: '0x0D18B62A4e3f376fFAF5920a8ecbffce0e024539',
 } as const
 
 /**
- * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xFA261f2b4C4b97cd78CeAFD6d68b39C9095E8aE8)
- * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x43378Ec7c37C2150446C79E7B098F04a076fcC3D)
+ * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x3EB8F85aB7364bE9e10A898093fFe397870A2AE3)
+ * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x0D18B62A4e3f376fFAF5920a8ecbffce0e024539)
  */
 export const myTokenConfig = {
   address: myTokenAddress,
@@ -270,8 +270,8 @@ export const myTokenConfig = {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x3Dd30df1B28b1fA68e3BCdC1DbF6DD38ec16f01C)
- * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x63d88ff1D22Ce35238DA2842FCeA6B2409D87f6B)
+ * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x59BCcF525121202FC7D60E0b7A0e88E32D041adB)
+ * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0xdaB387705a29fce9a0e011595fe4778502BfEB22)
  */
 export const otcMarketAbi = [
   {
@@ -283,7 +283,10 @@ export const otcMarketAbi = [
   },
   {
     type: 'function',
-    inputs: [{ name: 'offerId', internalType: 'uint256', type: 'uint256' }],
+    inputs: [
+      { name: 'offerId', internalType: 'uint256', type: 'uint256' },
+      { name: 'sourceTokenAmount', internalType: 'uint256', type: 'uint256' },
+    ],
     name: 'acceptOffer',
     outputs: [],
     stateMutability: 'payable',
@@ -356,6 +359,17 @@ export const otcMarketAbi = [
       { name: 'targetTokenAddress', internalType: 'address', type: 'address' },
       { name: 'sourceTokenAmount', internalType: 'uint256', type: 'uint256' },
       { name: 'exchangeRate', internalType: 'uint256', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'chain', internalType: 'uint16', type: 'uint16' }],
+    name: 'otherOtcMarkets',
+    outputs: [
+      { name: 'otcMarket', internalType: 'address', type: 'address' },
+      { name: 'lastEmittedMessage', internalType: 'uint256', type: 'uint256' },
+      { name: 'lastReceivedMessage', internalType: 'uint256', type: 'uint256' },
     ],
     stateMutability: 'view',
   },
@@ -434,6 +448,12 @@ export const otcMarketAbi = [
         internalType: 'address',
         type: 'address',
         indexed: true,
+      },
+      {
+        name: 'sourceTokenAmount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
       },
     ],
     name: 'OfferAccepted',
@@ -516,6 +536,20 @@ export const otcMarketAbi = [
     type: 'event',
     anonymous: false,
     inputs: [
+      { name: 'chain', internalType: 'uint16', type: 'uint16', indexed: false },
+      {
+        name: 'otcMarket',
+        internalType: 'address',
+        type: 'address',
+        indexed: false,
+      },
+    ],
+    name: 'OtcMarketListed',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
       {
         name: 'previousOwner',
         internalType: 'address',
@@ -534,6 +568,14 @@ export const otcMarketAbi = [
   {
     type: 'error',
     inputs: [
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'offerAmount', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'ExcessiveAmount',
+  },
+  {
+    type: 'error',
+    inputs: [
       { name: 'provided', internalType: 'uint256', type: 'uint256' },
       { name: 'required', internalType: 'uint256', type: 'uint256' },
     ],
@@ -543,6 +585,17 @@ export const otcMarketAbi = [
     type: 'error',
     inputs: [{ name: 'chain', internalType: 'uint16', type: 'uint16' }],
     name: 'InvalidChain',
+  },
+  {
+    type: 'error',
+    inputs: [
+      {
+        name: 'recentReceivedMessage',
+        internalType: 'uint256',
+        type: 'uint256',
+      },
+    ],
+    name: 'InvalidMessageOrder',
   },
   {
     type: 'error',
@@ -596,17 +649,17 @@ export const otcMarketAbi = [
 ] as const
 
 /**
- * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x3Dd30df1B28b1fA68e3BCdC1DbF6DD38ec16f01C)
- * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x63d88ff1D22Ce35238DA2842FCeA6B2409D87f6B)
+ * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x59BCcF525121202FC7D60E0b7A0e88E32D041adB)
+ * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0xdaB387705a29fce9a0e011595fe4778502BfEB22)
  */
 export const otcMarketAddress = {
-  84532: '0x3Dd30df1B28b1fA68e3BCdC1DbF6DD38ec16f01C',
-  11155420: '0x63d88ff1D22Ce35238DA2842FCeA6B2409D87f6B',
+  84532: '0x59BCcF525121202FC7D60E0b7A0e88E32D041adB',
+  11155420: '0xdaB387705a29fce9a0e011595fe4778502BfEB22',
 } as const
 
 /**
- * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x3Dd30df1B28b1fA68e3BCdC1DbF6DD38ec16f01C)
- * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x63d88ff1D22Ce35238DA2842FCeA6B2409D87f6B)
+ * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x59BCcF525121202FC7D60E0b7A0e88E32D041adB)
+ * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0xdaB387705a29fce9a0e011595fe4778502BfEB22)
  */
 export const otcMarketConfig = {
   address: otcMarketAddress,

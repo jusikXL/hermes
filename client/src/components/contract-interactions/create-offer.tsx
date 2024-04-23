@@ -62,7 +62,7 @@ export default function CreateOffer() {
       address: myTokenAddress[getChainId(config)],
       abi: myTokenAbi,
       functionName: 'approve',
-      args: [myTokenAddress[getChainId(config)], parseEther(values.amount.toString())],
+      args: [otcMarketAddress[getChainId(config)], parseEther(values.amount.toString())],
     });
     const approveResultPromise = approvePromise.then((tx) => {
       return client.waitForTransactionReceipt({
@@ -92,8 +92,8 @@ export default function CreateOffer() {
                 address!,
                 values.sourceToken,
                 values.targetToken,
-                BigInt(values.amount),
-                BigInt(values.exchangeRate),
+                parseEther(values.amount.toString()),
+                parseEther(values.exchangeRate.toString()),
               ],
               value: cost,
             });

@@ -10,12 +10,12 @@ export default defineConfig({
       include: ['OtcMarket.json', 'MyToken.json'],
       deployments: {
         OtcMarket: {
-          84532: '0x3Dd30df1B28b1fA68e3BCdC1DbF6DD38ec16f01C',
-          11155420: '0x63d88ff1D22Ce35238DA2842FCeA6B2409D87f6B',
+          84532: '0xB01B23527797AFB7dAafF62ada9ad7Fb75cF57f0',
+          11155420: '0xbbf2c8801367AA474468AeF5d990d17B7735Af03',
         },
         MyToken: {
-          84532: '0xFA261f2b4C4b97cd78CeAFD6d68b39C9095E8aE8',
-          11155420: '0x43378Ec7c37C2150446C79E7B098F04a076fcC3D',
+          84532: '0x7B7789A97B6b931269d95426bb1e328E93F077a4',
+          11155420: '0x8011c2967d2b253774eCaEe78B92642cF2e0aa1e',
         },
       },
     }),
