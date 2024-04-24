@@ -68,7 +68,7 @@ abstract contract OtcMarket is IOtcMarket, Ownable {
     function quoteCrossChainDelivery(
         uint16 targetChain,
         uint256 receiverValue
-    ) public view virtual override returns (uint256 cost);
+    ) public view virtual returns (uint256 cost);
 
     function _sendWormholeMessage(
         CrossChainMessages messageType,

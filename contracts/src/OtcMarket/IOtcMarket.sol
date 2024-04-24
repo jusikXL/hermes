@@ -170,12 +170,4 @@ interface IOtcMarket {
      * @dev Function to whitelist other otc market.
      */
     function listOtcMarket(uint16 targetChain, address otcMarket) external;
-
-    /**
-     * @dev Function to quote cross chain delivery price.
-     */
-    function quoteCrossChainDelivery(
-        uint16 targetChain,
-        uint256 receiverValue
-    ) external view returns (uint256 cost);
 }
