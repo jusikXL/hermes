@@ -23,7 +23,7 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         performDelivery();
 
         vm.selectFork(secondFork);
-        uint256 targetCost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        uint256 targetCost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
         vm.selectFork(firstFork);
         uint256 sourceCost = firstOtcMarket.quoteCrossChainDelivery(secondChain, targetCost);
 
@@ -73,7 +73,7 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         );
         performDelivery();
 
-        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.NonexistentOffer.selector, offerId + 1));
         firstOtcMarket.cancelOffer{value: cost}(offerId + 1, 0);
@@ -93,7 +93,7 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         );
         performDelivery();
 
-        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
 
         firstOtcMarket.cancelOffer{value: cost}(offerId, 0);
         (, uint256 lastSourceEmittedMessage, uint256 lastSourceIncommingMessage) = firstOtcMarket
@@ -131,7 +131,7 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         );
         performDelivery();
 
-        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InsufficientValue.selector, 0, cost));
         firstOtcMarket.cancelOffer{value: 0}(offerId, 0);
@@ -151,7 +151,7 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         );
         performDelivery();
 
-        uint256 targetCost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+        uint256 targetCost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
 
         vm.selectFork(secondFork);
 
@@ -176,7 +176,7 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         performDelivery();
 
         vm.selectFork(secondFork);
-        uint256 targetCost = secondOtcMarket.quoteCrossChainDelivery(secondChain);
+        uint256 targetCost = secondOtcMarket.quoteCrossChainDelivery(secondChain, 0);
 
         vm.selectFork(firstFork);
         uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, targetCost);

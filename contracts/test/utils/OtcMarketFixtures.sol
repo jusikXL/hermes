@@ -14,7 +14,7 @@ abstract contract OtcMarketFixtures {
         uint256 sourceTokenAmount,
         uint256 exchangeRate
     ) internal returns (uint256 offerId) {
-        uint256 cost = sourceOtcMarket.quoteCrossChainDelivery(targetChain);
+        uint256 cost = sourceOtcMarket.quoteCrossChainDelivery(targetChain, 0);
         sourceToken.approve(address(sourceOtcMarket), sourceTokenAmount);
         offerId = sourceOtcMarket.createOffer{value: cost}(
             targetChain,

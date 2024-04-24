@@ -40,7 +40,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
             (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether
         );
 
-        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
 
         vm.expectEmit(true, true, false, false, address(secondOtcMarket));
         emit IOtcMarket.OfferAccepted(offerId, buyer, ACCEPT_OFFER_AMOUNT);
@@ -95,7 +95,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         performDelivery();
 
         vm.selectFork(secondFork);
-        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
         secondToken.approve(address(secondOtcMarket), ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE);
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InsufficientValue.selector, 0, cost));
@@ -119,7 +119,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         performDelivery();
 
         vm.selectFork(secondFork);
-        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
         vm.selectFork(firstFork);
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, firstChain));
@@ -142,7 +142,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         performDelivery();
 
         vm.selectFork(secondFork);
-        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
         secondToken.approve(address(secondOtcMarket), ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE);
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.NonexistentOffer.selector, offerId + 1));
@@ -165,7 +165,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         performDelivery();
 
         vm.selectFork(secondFork);
-        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain);
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
         secondToken.approve(
             address(secondOtcMarket),
             (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether

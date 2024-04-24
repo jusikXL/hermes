@@ -7,7 +7,7 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
     function testCreateOffer_Positive() public {
         vm.selectFork(0);
         firstToken.approve(address(firstOtcMarket), AMOUNT);
-        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
 
         uint256 offerId = firstOtcMarket.hashOffer(
             address(this),
@@ -80,7 +80,7 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
     }
 
     function testCreateOffer_InvalidPrice() public {
-        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, 0, EXCHANGE_RATE));
         firstOtcMarket.createOffer{value: cost}(
@@ -114,7 +114,7 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
     }
 
     function testCreateOffer_InvalidChain() public {
-        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(thirdChain);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(thirdChain, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, thirdChain));
         firstOtcMarket.createOffer{value: cost}(
@@ -128,7 +128,7 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
     }
 
     function testCreateOffer_InsufficientValue() public {
-        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InsufficientValue.selector, 0, cost));
         firstOtcMarket.createOffer{value: 0}(
@@ -152,7 +152,7 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
             EXCHANGE_RATE
         );
 
-        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain);
+        uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
         firstToken.approve(address(firstOtcMarket), AMOUNT);
 
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.OfferAlreadyExists.selector, offerId));

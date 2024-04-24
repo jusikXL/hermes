@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {MyOtcMarket} from "../src/OtcMarket/MyOtcMarket.sol";
-import {OtcMarket} from "../src/OtcMarket/OtcMarket.sol";
 import {IOtcMarket} from "../src/OtcMarket/IOtcMarket.sol";
+import {MyOtcMarket} from "../src/OtcMarket/MyOtcMarket.sol";
 import {MyToken} from "../src/MyToken.sol";
 
 import {WormholeRelayerTrippleTest} from "./utils/WormholeRelayerTrippleTest.sol";
@@ -14,9 +13,9 @@ import "forge-std/Test.sol";
 import "wormhole-solidity-sdk/Utils.sol";
 
 abstract contract OtcMarketCoreTest is WormholeRelayerTrippleTest, OtcMarketFixtures {
-    OtcMarket public firstOtcMarket;
-    OtcMarket public secondOtcMarket;
-    OtcMarket public thirdOtcMarket;
+    MyOtcMarket public firstOtcMarket;
+    MyOtcMarket public secondOtcMarket;
+    MyOtcMarket public thirdOtcMarket;
 
     MyToken public firstToken;
     MyToken public secondToken;
