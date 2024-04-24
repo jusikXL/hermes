@@ -177,7 +177,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         secondOtcMarket.acceptOffer{value: cost}(offerId, ACCEPT_OFFER_AMOUNT);
     }
 
-    function testAcceptOffer_InvalidChainReceined() public {
+    function testAcceptOffer_InvalidChainReceived() public {
         uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
         vm.recordLogs();
 

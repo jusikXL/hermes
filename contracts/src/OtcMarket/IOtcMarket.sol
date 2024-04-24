@@ -91,11 +91,6 @@ interface IOtcMarket {
     error NonexistentOffer(uint256 offerId);
 
     /**
-     * @dev Received cross chain message is not supported.
-     */
-    error UnsupportedMessage();
-
-    /**
      * @dev Emmited when
      * - otc market is listed or updated
      */

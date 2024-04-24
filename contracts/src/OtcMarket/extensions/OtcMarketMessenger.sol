@@ -123,8 +123,6 @@ abstract contract OtcMarketMessenger is OtcMarket, IWormholeReceiver {
             }
 
             _receiveCancelOffer(offerId);
-        } else {
-            revert UnsupportedMessage();
         }
     }
 }
