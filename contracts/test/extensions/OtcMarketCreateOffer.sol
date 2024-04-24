@@ -4,9 +4,12 @@ pragma solidity ^0.8.20;
 import "../OtcMarketCore.sol";
 
 abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
-    function testCreateOffer_Positive() public {
+    function testCreateOffer_Positive(uint248 amount) public {
+        vm.assume(amount > 0);
+
         vm.selectFork(0);
-        firstToken.approve(address(firstOtcMarket), AMOUNT);
+        firstToken.mint(address(this), amount);
+        firstToken.approve(address(firstOtcMarket), amount);
         uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
 
         uint256 offerId = firstOtcMarket.hashOffer(
@@ -28,7 +31,7 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
             secondChain,
             address(firstToken),
             address(secondToken),
-            AMOUNT,
+            amount,
             EXCHANGE_RATE
         );
         firstOtcMarket.createOffer{value: cost}(
@@ -36,7 +39,7 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
             address(this),
             address(firstToken),
             address(secondToken),
-            AMOUNT,
+            amount,
             EXCHANGE_RATE
         );
 
@@ -50,7 +53,7 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
             secondChain,
             address(firstToken),
             address(secondToken),
-            AMOUNT,
+            amount,
             EXCHANGE_RATE
         );
 
@@ -75,7 +78,7 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
         assertEq(tc, secondChain);
         assertEq(sta, address(firstToken));
         assertEq(tta, address(secondToken));
-        assertEq(a, AMOUNT);
+        assertEq(a, amount);
         assertEq(er, EXCHANGE_RATE);
     }
 
