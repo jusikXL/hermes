@@ -62,4 +62,17 @@ abstract contract OtcMarketAcceptOffer is OtcMarket {
             0
         );
     }
+
+    function _receiveAcceptOffer(
+        uint256 offerId,
+        address buyer,
+        uint256 sourceTokenAmount
+    ) internal virtual override {
+        Offer storage offer = offers[offerId];
+
+        offer.sourceTokenAmount -= sourceTokenAmount;
+        emit OfferAccepted(offerId, buyer, sourceTokenAmount);
+
+        IERC20(offer.sourceTokenAddress).transfer(buyer, sourceTokenAmount);
+    }
 }

@@ -82,4 +82,20 @@ abstract contract OtcMarketCreateOffer is OtcMarket {
             revert InvalidPrice(sourceTokenAmount, exchangeRate);
         }
     }
+
+    function _receiveCreateOffer(uint256 offerId, Offer memory offer) internal virtual override {
+        offers[offerId] = offer;
+
+        emit OfferCreated(
+            offerId,
+            offer.sellerSourceAddress,
+            offer.sellerTargetAddress,
+            offer.sourceChain,
+            offer.targetChain,
+            offer.sourceTokenAddress,
+            offer.targetTokenAddress,
+            offer.sourceTokenAmount,
+            offer.exchangeRate
+        );
+    }
 }

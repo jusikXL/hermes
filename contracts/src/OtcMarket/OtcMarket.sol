@@ -77,4 +77,16 @@ abstract contract OtcMarket is IOtcMarket, Ownable {
         uint256 cost,
         uint256 targetCost
     ) internal virtual;
+
+    function _receiveCreateOffer(uint256 offerId, Offer memory offer) internal virtual;
+
+    function _receiveAcceptOffer(
+        uint256 offerId,
+        address buyer,
+        uint256 sourceTokenAmount
+    ) internal virtual;
+
+    function _receiveCancelOfferAppeal(uint256 cost, uint256 offerId) internal virtual;
+
+    function _receiveCancelOffer(uint256 offerId) internal virtual;
 }

@@ -35,4 +35,34 @@ abstract contract OtcMarketCancelOffer is OtcMarket {
             targetCost
         );
     }
+
+    function _receiveCancelOfferAppeal(uint256 cost, uint256 offerId) internal virtual override {
+        uint16 sourceChain = offers[offerId].sourceChain;
+
+        delete offers[offerId];
+
+        emit OfferCanceled(offerId);
+
+        bytes memory messagePayload = abi.encode(offerId);
+        _sendWormholeMessage(
+            CrossChainMessages.OfferCanceled,
+            messagePayload,
+            sourceChain,
+            cost,
+            0
+        );
+    }
+
+    function _receiveCancelOffer(uint256 offerId) internal virtual override {
+        Offer storage offer = offers[offerId];
+
+        emit OfferCanceled(offerId);
+
+        IERC20(offer.sourceTokenAddress).transfer(
+            offer.sellerSourceAddress,
+            offer.sourceTokenAmount
+        );
+
+        delete offers[offerId];
+    }
 }
