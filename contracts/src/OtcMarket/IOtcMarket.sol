@@ -19,8 +19,8 @@ interface IOtcMarket {
         uint16 targetChain;
         address sourceTokenAddress;
         address targetTokenAddress;
-        uint256 sourceTokenAmount;
-        uint256 exchangeRate; // price per source token in target token units
+        uint128 sourceTokenAmount;
+        uint128 exchangeRate; // price per source token in target token units
     }
 
     struct ChainInfo {
@@ -38,12 +38,12 @@ interface IOtcMarket {
     /**
      * @dev Zero as amount or exchange rate
      */
-    error InvalidPrice(uint256 amount, uint256 exchangeRate);
+    error InvalidPrice(uint256 amount, uint128 exchangeRate);
 
     /**
      * @dev Tried to accept an offer for an amount exceeding the available offer amount.
      */
-    error ExcessiveAmount(uint256 amount, uint256 offerAmount);
+    error ExcessiveAmount(uint128 amount, uint128 offerAmount);
 
     /**
      * @dev Provided value is less than required.
@@ -109,8 +109,8 @@ interface IOtcMarket {
         uint16 indexed targetChain,
         address sourceTokenAddress,
         address targetTokenAddress,
-        uint256 sourceTokenAmount,
-        uint256 exchangeRate
+        uint128 sourceTokenAmount,
+        uint128 exchangeRate
     );
 
     /**
@@ -118,7 +118,7 @@ interface IOtcMarket {
      * - offer is accepted on target chain
      * - offer accepted message came to source chain.
      */
-    event OfferAccepted(uint256 indexed offerId, address indexed buyer, uint256 sourceTokenAmount);
+    event OfferAccepted(uint256 indexed offerId, address indexed buyer, uint128 sourceTokenAmount);
 
     /**
      * @dev Emmited when
@@ -136,7 +136,7 @@ interface IOtcMarket {
         uint16 targetChain,
         address sourceTokenAddress,
         address targetTokenAddress,
-        uint256 exchangeRate
+        uint128 exchangeRate
     ) external pure returns (uint256 offerId);
 
     /**
@@ -147,14 +147,14 @@ interface IOtcMarket {
         address sellerTargetAddress,
         address sourceTokenAddress,
         address targetTokenAddress,
-        uint256 sourceTokenAmount,
-        uint256 exchangeRate
+        uint128 sourceTokenAmount,
+        uint128 exchangeRate
     ) external payable returns (uint256 newOfferId);
 
     /**
      * @dev Function to accept the offer.
      */
-    function acceptOffer(uint256 offerId, uint256 sourceTokenAmount) external payable;
+    function acceptOffer(uint256 offerId, uint128 sourceTokenAmount) external payable;
 
     /**
      * @dev Function to cancel the offer.

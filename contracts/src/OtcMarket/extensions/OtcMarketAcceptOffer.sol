@@ -11,7 +11,7 @@ import {OtcMarket} from "../OtcMarket.sol";
 abstract contract OtcMarketAcceptOffer is OtcMarket {
     function acceptOffer(
         uint256 offerId,
-        uint256 sourceTokenAmount
+        uint128 sourceTokenAmount
     ) public payable virtual override {
         Offer storage offer = offers[offerId];
         if (offer.sellerSourceAddress == address(0)) {
@@ -35,12 +35,13 @@ abstract contract OtcMarketAcceptOffer is OtcMarket {
     function _acceptOffer(
         uint256 cost,
         uint256 offerId,
-        uint256 sourceTokenAmount
+        uint128 sourceTokenAmount
     ) internal virtual {
         Offer storage offer = offers[offerId];
         address buyer = msg.sender;
 
-        uint256 targetTokenAmount = (sourceTokenAmount * offer.exchangeRate) / 1 ether;
+        uint256 targetTokenAmount = (uint256(sourceTokenAmount) * uint256(offer.exchangeRate)) /
+            1 ether;
         uint256 fee = targetTokenAmount > 100 ether ? targetTokenAmount / 100 : 1 ether; // $1 or 1% fee
 
         offer.sourceTokenAmount -= sourceTokenAmount;
@@ -66,7 +67,7 @@ abstract contract OtcMarketAcceptOffer is OtcMarket {
     function _receiveAcceptOffer(
         uint256 offerId,
         address buyer,
-        uint256 sourceTokenAmount
+        uint128 sourceTokenAmount
     ) internal virtual override {
         Offer storage offer = offers[offerId];
 

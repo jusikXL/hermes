@@ -137,7 +137,7 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         firstOtcMarket.cancelOffer{value: 0}(offerId, 0);
     }
 
-    function testCancelOffer_InvalidChainAppeal() public {
+    function testCancelOffer_InvalidChainAppealSent() public {
         vm.recordLogs();
 
         uint256 offerId = _createOfferFixture(
@@ -151,14 +151,10 @@ abstract contract OtcMarketCancelOfferTest is OtcMarketCoreTest {
         );
         performDelivery();
 
-        uint256 targetCost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
-
         vm.selectFork(secondFork);
 
-        uint256 sourceCost = secondOtcMarket.quoteCrossChainDelivery(firstChain, targetCost);
-
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, secondChain));
-        secondOtcMarket.cancelOffer{value: sourceCost}(offerId, targetCost);
+        secondOtcMarket.cancelOffer{value: 2 ether}(offerId, 1 ether);
     }
 
     function testCancelOffer_OnlySeller() public {

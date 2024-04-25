@@ -14,8 +14,8 @@ abstract contract OtcMarketCreateOffer is OtcMarket {
         address sellerTargetAddress,
         address sourceTokenAddress,
         address targetTokenAddress,
-        uint256 sourceTokenAmount,
-        uint256 exchangeRate
+        uint128 sourceTokenAmount,
+        uint128 exchangeRate
     ) public payable virtual override returns (uint256 newOfferId) {
         uint256 cost = quoteCrossChainDelivery(targetChain, 0);
         _validateOfferParams(targetChain, sourceTokenAmount, exchangeRate, cost);
@@ -68,8 +68,8 @@ abstract contract OtcMarketCreateOffer is OtcMarket {
 
     function _validateOfferParams(
         uint16 targetChain,
-        uint256 sourceTokenAmount,
-        uint256 exchangeRate,
+        uint128 sourceTokenAmount,
+        uint128 exchangeRate,
         uint256 cost
     ) internal view virtual {
         if (msg.value < cost) {

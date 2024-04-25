@@ -94,9 +94,9 @@ abstract contract OtcMarketMessenger is OtcMarket, IWormholeReceiver {
 
             _receiveCreateOffer(offerId, offer);
         } else if (messageType == CrossChainMessages.OfferAccepted) {
-            (uint256 offerId, address buyer, uint256 sourceTokenAmount) = abi.decode(
+            (uint256 offerId, address buyer, uint128 sourceTokenAmount) = abi.decode(
                 payload,
-                (uint256, address, uint256)
+                (uint256, address, uint128)
             );
 
             if (chain != offers[offerId].sourceChain) {

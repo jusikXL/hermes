@@ -32,7 +32,7 @@ abstract contract OtcMarket is IOtcMarket, Ownable {
         uint16 targetChain,
         address sourceTokenAddress,
         address targetTokenAddress,
-        uint256 exchangeRate
+        uint128 exchangeRate
     ) public pure virtual override returns (uint256 offerId) {
         return
             uint256(
@@ -54,13 +54,13 @@ abstract contract OtcMarket is IOtcMarket, Ownable {
         address sellerTargetAddress,
         address sourceTokenAddress,
         address targetTokenAddress,
-        uint256 sourceTokenAmount,
-        uint256 exchangeRate
+        uint128 sourceTokenAmount,
+        uint128 exchangeRate
     ) public payable virtual override returns (uint256 newOfferId);
 
     function acceptOffer(
         uint256 offerId,
-        uint256 sourceTokenAmount
+        uint128 sourceTokenAmount
     ) public payable virtual override;
 
     function cancelOffer(uint256 offerId, uint256 targetCost) public payable virtual override;
@@ -83,7 +83,7 @@ abstract contract OtcMarket is IOtcMarket, Ownable {
     function _receiveAcceptOffer(
         uint256 offerId,
         address buyer,
-        uint256 sourceTokenAmount
+        uint128 sourceTokenAmount
     ) internal virtual;
 
     function _receiveCancelOfferAppeal(uint256 cost, uint256 offerId) internal virtual;

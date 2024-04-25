@@ -5,7 +5,7 @@ import "../OtcMarketCore.sol";
 
 abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
     function testAcceptOffer_Positive() public {
-        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+        uint128 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
         vm.recordLogs();
         address seller = makeAddr("seller");
         address buyer = makeAddr("buyer");
@@ -80,7 +80,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
     }
 
     function testAcceptOffer_InsufficientValue() public {
-        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+        uint128 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
         vm.recordLogs();
 
         uint256 offerId = _createOfferFixture(
@@ -102,9 +102,9 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         secondOtcMarket.acceptOffer{value: 0}(offerId, ACCEPT_OFFER_AMOUNT);
     }
 
-    function testAcceptOffer_InvalidChain() public {
+    function testAcceptOffer_InvalidChainSent() public {
         // accept offer from seller chain
-        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+        uint128 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
         vm.recordLogs();
 
         uint256 offerId = _createOfferFixture(
@@ -118,16 +118,12 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
         );
         performDelivery();
 
-        vm.selectFork(secondFork);
-        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
-        vm.selectFork(firstFork);
-
         vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidChain.selector, firstChain));
-        firstOtcMarket.acceptOffer{value: cost}(offerId, ACCEPT_OFFER_AMOUNT);
+        firstOtcMarket.acceptOffer{value: 1 ether}(offerId, ACCEPT_OFFER_AMOUNT);
     }
 
     function testAcceptOffer_NonexistentOffer() public {
-        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+        uint128 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
         vm.recordLogs();
 
         uint256 offerId = _createOfferFixture(
@@ -150,7 +146,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
     }
 
     function testAcceptOffer_ExcessiveAmount() public {
-        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT * 2;
+        uint128 ACCEPT_OFFER_AMOUNT = AMOUNT * 2;
         vm.recordLogs();
 
         uint256 offerId = _createOfferFixture(
@@ -166,10 +162,10 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
 
         vm.selectFork(secondFork);
         uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
-        secondToken.approve(
-            address(secondOtcMarket),
-            (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether
-        );
+
+        uint256 targetAmount = (uint256(ACCEPT_OFFER_AMOUNT) * uint256(EXCHANGE_RATE));
+
+        secondToken.approve(address(secondOtcMarket), targetAmount);
 
         vm.expectRevert(
             abi.encodeWithSelector(IOtcMarket.ExcessiveAmount.selector, ACCEPT_OFFER_AMOUNT, AMOUNT)
@@ -178,7 +174,7 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
     }
 
     function testAcceptOffer_InvalidChainReceived() public {
-        uint256 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+        uint128 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
         vm.recordLogs();
 
         uint256 offerId = _createOfferFixture(

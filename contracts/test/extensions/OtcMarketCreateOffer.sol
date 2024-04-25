@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "../OtcMarketCore.sol";
 
 abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
-    function testCreateOffer_Positive(uint248 amount) public {
+    function testCreateOffer_Positive(uint128 amount) public {
         vm.assume(amount > 0);
 
         vm.selectFork(0);
