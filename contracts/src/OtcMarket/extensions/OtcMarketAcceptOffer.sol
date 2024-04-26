@@ -5,8 +5,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {OtcMarket} from "../OtcMarket.sol";
 
-import "forge-std/Test.sol";
-
 /**
  * @dev Extension of {OtcMarket} for offer acceptance.
  */
