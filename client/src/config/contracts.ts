@@ -270,10 +270,31 @@ export const myTokenConfig = {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xB01B23527797AFB7dAafF62ada9ad7Fb75cF57f0)
- * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0xbbf2c8801367AA474468AeF5d990d17B7735Af03)
+ * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x146eBBD4026726A4B80E21f259713944F3B7acF2)
+ * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x716CBA8A62CBc0F4f5715986B6763b211722f4E1)
  */
 export const otcMarketAbi = [
+  {
+    type: 'function',
+    inputs: [],
+    name: 'FEE',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'MINIMUM_AMOUNT',
+    outputs: [{ name: '', internalType: 'uint128', type: 'uint128' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'MINIMUM_EXCHANGE_RATE',
+    outputs: [{ name: '', internalType: 'uint128', type: 'uint128' }],
+    stateMutability: 'view',
+  },
   {
     type: 'function',
     inputs: [
@@ -539,6 +560,18 @@ export const otcMarketAbi = [
   },
   {
     type: 'error',
+    inputs: [{ name: 'amount', internalType: 'uint128', type: 'uint128' }],
+    name: 'InsufficientAmount',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'exchangeRate', internalType: 'uint128', type: 'uint128' },
+    ],
+    name: 'InsufficientExchangeRate',
+  },
+  {
+    type: 'error',
     inputs: [
       { name: 'provided', internalType: 'uint256', type: 'uint256' },
       { name: 'required', internalType: 'uint256', type: 'uint256' },
@@ -560,14 +593,6 @@ export const otcMarketAbi = [
       },
     ],
     name: 'InvalidMessageOrder',
-  },
-  {
-    type: 'error',
-    inputs: [
-      { name: 'amount', internalType: 'uint256', type: 'uint256' },
-      { name: 'exchangeRate', internalType: 'uint128', type: 'uint128' },
-    ],
-    name: 'InvalidPrice',
   },
   {
     type: 'error',
@@ -607,17 +632,17 @@ export const otcMarketAbi = [
 ] as const
 
 /**
- * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xB01B23527797AFB7dAafF62ada9ad7Fb75cF57f0)
- * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0xbbf2c8801367AA474468AeF5d990d17B7735Af03)
+ * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x146eBBD4026726A4B80E21f259713944F3B7acF2)
+ * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x716CBA8A62CBc0F4f5715986B6763b211722f4E1)
  */
 export const otcMarketAddress = {
-  84532: '0xB01B23527797AFB7dAafF62ada9ad7Fb75cF57f0',
-  11155420: '0xbbf2c8801367AA474468AeF5d990d17B7735Af03',
+  84532: '0x146eBBD4026726A4B80E21f259713944F3B7acF2',
+  11155420: '0x716CBA8A62CBc0F4f5715986B6763b211722f4E1',
 } as const
 
 /**
- * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xB01B23527797AFB7dAafF62ada9ad7Fb75cF57f0)
- * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0xbbf2c8801367AA474468AeF5d990d17B7735Af03)
+ * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0x146eBBD4026726A4B80E21f259713944F3B7acF2)
+ * - [__View Contract on Op Sepolia Blockscout__](https://optimism-sepolia.blockscout.com/address/0x716CBA8A62CBc0F4f5715986B6763b211722f4E1)
  */
 export const otcMarketConfig = {
   address: otcMarketAddress,

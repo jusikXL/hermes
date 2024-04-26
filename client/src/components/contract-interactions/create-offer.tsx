@@ -77,7 +77,7 @@ export default function CreateOffer() {
           address: otcMarketAddress[getChainId(config)],
           abi: otcMarketAbi,
           functionName: 'quoteCrossChainDelivery',
-          args: [values.chain],
+          args: [values.chain, BigInt(0)],
         });
 
         toast.promise(costPromise, {
