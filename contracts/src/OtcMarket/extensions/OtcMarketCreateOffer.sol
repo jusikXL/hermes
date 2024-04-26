@@ -78,8 +78,11 @@ abstract contract OtcMarketCreateOffer is OtcMarket {
         if (otherOtcMarkets[targetChain].otcMarket == address(0)) {
             revert InvalidChain(targetChain);
         }
-        if (sourceTokenAmount == 0 || exchangeRate == 0) {
-            revert InvalidPrice(sourceTokenAmount, exchangeRate);
+        if (sourceTokenAmount < MINIMUM_AMOUNT) {
+            revert InsufficientAmount(sourceTokenAmount);
+        }
+        if (exchangeRate < MINIMUM_EXCHANGE_RATE) {
+            revert InsufficientExchangeRate(exchangeRate);
         }
     }
 

@@ -5,6 +5,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {OtcMarket} from "../OtcMarket.sol";
 
+import "forge-std/Test.sol";
+
 /**
  * @dev Extension of {OtcMarket} for offer acceptance.
  */
@@ -17,13 +19,15 @@ abstract contract OtcMarketAcceptOffer is OtcMarket {
         if (offer.sellerSourceAddress == address(0)) {
             revert NonexistentOffer(offerId);
         }
-
         uint256 cost = quoteCrossChainDelivery(offer.sourceChain, 0);
         if (msg.value < cost) {
             revert InsufficientValue(msg.value, cost);
         }
         if (chain != offer.targetChain) {
             revert InvalidChain(chain);
+        }
+        if (sourceTokenAmount < MINIMUM_AMOUNT) {
+            revert InsufficientAmount(sourceTokenAmount);
         }
         if (offer.sourceTokenAmount < sourceTokenAmount) {
             revert ExcessiveAmount(sourceTokenAmount, offer.sourceTokenAmount);
@@ -42,7 +46,7 @@ abstract contract OtcMarketAcceptOffer is OtcMarket {
 
         uint256 targetTokenAmount = (uint256(sourceTokenAmount) * uint256(offer.exchangeRate)) /
             1 ether;
-        uint256 fee = targetTokenAmount > 100 ether ? targetTokenAmount / 100 : 1 ether; // $1 or 1% fee
+        uint256 fee = targetTokenAmount / 100; // 1%
 
         offer.sourceTokenAmount -= sourceTokenAmount;
         emit OfferAccepted(offerId, buyer, sourceTokenAmount);

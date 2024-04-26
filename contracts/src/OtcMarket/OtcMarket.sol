@@ -9,6 +9,10 @@ import {IOtcMarket} from "./IOtcMarket.sol";
  * @dev See {IOtcMarket}.
  */
 abstract contract OtcMarket is IOtcMarket, Ownable {
+    uint128 public constant MINIMUM_EXCHANGE_RATE = 10 ** 8;
+    uint128 public constant MINIMUM_AMOUNT = 10 ** 12;
+    uint256 public constant FEE = 100;
+
     uint16 public immutable chain;
 
     mapping(uint16 chain => ChainInfo) public otherOtcMarkets;

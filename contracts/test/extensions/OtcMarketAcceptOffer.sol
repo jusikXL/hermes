@@ -4,24 +4,85 @@ pragma solidity ^0.8.20;
 import "../OtcMarketCore.sol";
 
 abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
-    function testAcceptOffer_Positive() public {
-        uint128 ACCEPT_OFFER_AMOUNT = AMOUNT / 3;
+    function testAcceptOffer_Positive(
+        uint128 offerAmount,
+        uint128 exchangeRate,
+        uint128 acceptAmount
+    ) public {
+        vm.assume(acceptAmount >= firstOtcMarket.MINIMUM_AMOUNT());
+        vm.assume(offerAmount >= acceptAmount);
+        vm.assume(exchangeRate >= firstOtcMarket.MINIMUM_EXCHANGE_RATE());
+
         vm.recordLogs();
+
+        // introduce seller and buyer, mint and approve tokens, create offer
         address seller = makeAddr("seller");
-        address buyer = makeAddr("buyer");
-        // setting up
         vm.deal(seller, 10 ether);
-        firstToken.mint(seller, AMOUNT);
-
-        vm.selectFork(secondFork);
-        vm.deal(buyer, 10 ether);
-        secondToken.mint(buyer, (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether);
-
-        vm.selectFork(firstFork);
+        firstToken.mint(seller, offerAmount);
         vm.startPrank(seller);
-
         uint256 offerId = _createOfferFixture(
             seller,
+            firstOtcMarket,
+            secondChain,
+            firstToken,
+            address(secondToken),
+            offerAmount,
+            exchangeRate
+        );
+        vm.stopPrank();
+        performDelivery();
+
+        vm.selectFork(secondFork);
+        address buyer = makeAddr("buyer");
+        vm.deal(buyer, 10 ether);
+        uint256 targetAmount = (uint256(acceptAmount) * uint256(exchangeRate)) / 1 ether;
+        uint256 fee = targetAmount / 100; // 1%
+        secondToken.mint(buyer, targetAmount);
+        vm.prank(buyer);
+        secondToken.approve(address(secondOtcMarket), targetAmount);
+
+        // accept offer
+        uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
+        vm.expectEmit(true, true, false, false, address(secondOtcMarket));
+        emit IOtcMarket.OfferAccepted(offerId, buyer, acceptAmount);
+        vm.prank(buyer);
+        secondOtcMarket.acceptOffer{value: cost}(offerId, acceptAmount);
+
+        // expect OfferAccepted on source
+        vm.selectFork(firstFork);
+        vm.expectEmit(true, true, false, false, address(firstOtcMarket));
+        emit IOtcMarket.OfferAccepted(offerId, buyer, acceptAmount);
+
+        // deliver OfferAccepted
+        vm.selectFork(secondFork);
+        performDelivery();
+
+        // check balances
+        uint256 sellerBalance = secondToken.balanceOf(seller);
+        uint256 buyerBalance = secondToken.balanceOf(buyer);
+        (, , , , , , uint256 offerBalance, ) = secondOtcMarket.offers(offerId);
+
+        assertNotEq(fee, 0);
+        assertEq(offerBalance, offerAmount - acceptAmount, "target chain offer amount");
+        assertEq(buyerBalance, 0, "target chain buyer balance");
+        assertEq(sellerBalance, targetAmount - fee, "target chain seller balance");
+
+        vm.selectFork(firstFork);
+        sellerBalance = firstToken.balanceOf(seller);
+        buyerBalance = firstToken.balanceOf(buyer);
+        (, , , , , , offerBalance, ) = firstOtcMarket.offers(offerId);
+
+        assertEq(offerBalance, offerAmount - acceptAmount, "source chain offer amount");
+        assertEq(buyerBalance, acceptAmount, "source chain buyer balance");
+        assertEq(sellerBalance, 0, "source chain seller balance");
+    }
+
+    function testAcceptOffer_InsufficientAmount() public {
+        uint128 ACCEPT_OFFER_AMOUNT = 10 ** 12 - 1;
+        vm.recordLogs();
+
+        uint256 offerId = _createOfferFixture(
+            address(this),
             firstOtcMarket,
             secondChain,
             firstToken,
@@ -29,54 +90,16 @@ abstract contract OtcMarketAcceptOfferTest is OtcMarketCoreTest {
             AMOUNT,
             EXCHANGE_RATE
         );
-        vm.stopPrank();
         performDelivery();
 
         vm.selectFork(secondFork);
-
-        vm.startPrank(buyer);
-        secondToken.approve(
-            address(secondOtcMarket),
-            (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether
-        );
-
         uint256 cost = secondOtcMarket.quoteCrossChainDelivery(firstChain, 0);
+        secondToken.approve(address(secondOtcMarket), ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE);
 
-        vm.expectEmit(true, true, false, false, address(secondOtcMarket));
-        emit IOtcMarket.OfferAccepted(offerId, buyer, ACCEPT_OFFER_AMOUNT);
-
-        secondOtcMarket.acceptOffer{value: cost}(offerId, ACCEPT_OFFER_AMOUNT);
-        vm.stopPrank();
-
-        vm.selectFork(firstFork);
-
-        vm.expectEmit(true, true, false, false, address(firstOtcMarket));
-        emit IOtcMarket.OfferAccepted(offerId, buyer, ACCEPT_OFFER_AMOUNT);
-
-        vm.selectFork(secondFork);
-        performDelivery();
-        // check balances were modified
-        uint256 fee = 1 ether;
-        uint256 sellerBalance = secondToken.balanceOf(seller);
-        uint256 buyerBalance = secondToken.balanceOf(buyer);
-        (, , , , , , uint256 sourceTokenAmount, ) = secondOtcMarket.offers(offerId);
-
-        assertEq(sourceTokenAmount, AMOUNT - ACCEPT_OFFER_AMOUNT, "target chain offer amount");
-        assertEq(buyerBalance, 0, "target chain buyer balance");
-        assertEq(
-            sellerBalance,
-            (ACCEPT_OFFER_AMOUNT * EXCHANGE_RATE) / 1 ether - fee,
-            "target chain seller balance"
+        vm.expectRevert(
+            abi.encodeWithSelector(IOtcMarket.InsufficientAmount.selector, ACCEPT_OFFER_AMOUNT)
         );
-
-        vm.selectFork(firstFork);
-        sellerBalance = firstToken.balanceOf(seller);
-        buyerBalance = firstToken.balanceOf(buyer);
-        (, , , , , , sourceTokenAmount, ) = firstOtcMarket.offers(offerId);
-
-        assertEq(sourceTokenAmount, AMOUNT - ACCEPT_OFFER_AMOUNT, "source chain offer amount");
-        assertEq(buyerBalance, ACCEPT_OFFER_AMOUNT, "source chain buyer balance");
-        assertEq(sellerBalance, 0, "source chain seller balance");
+        secondOtcMarket.acceptOffer{value: cost}(offerId, ACCEPT_OFFER_AMOUNT);
     }
 
     function testAcceptOffer_InsufficientValue() public {

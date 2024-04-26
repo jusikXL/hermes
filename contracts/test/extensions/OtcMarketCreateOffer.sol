@@ -5,7 +5,7 @@ import "../OtcMarketCore.sol";
 
 abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
     function testCreateOffer_Positive(uint128 amount) public {
-        vm.assume(amount > 0);
+        vm.assume(amount >= firstOtcMarket.MINIMUM_AMOUNT());
 
         vm.selectFork(0);
         firstToken.mint(address(this), amount);
@@ -84,35 +84,29 @@ abstract contract OtcMarketCreateOfferTest is OtcMarketCoreTest {
 
     function testCreateOffer_InvalidPrice() public {
         uint256 cost = firstOtcMarket.quoteCrossChainDelivery(secondChain, 0);
+        uint128 amount = 10 ** 12 - 1;
+        uint128 exchangeRate = 10 ** 8 - 1;
 
-        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, 0, EXCHANGE_RATE));
+        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InsufficientAmount.selector, amount));
         firstOtcMarket.createOffer{value: cost}(
             secondChain,
             address(this),
             address(firstToken),
             address(secondToken),
-            0,
+            amount,
             EXCHANGE_RATE
         );
 
-        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, AMOUNT, 0));
+        vm.expectRevert(
+            abi.encodeWithSelector(IOtcMarket.InsufficientExchangeRate.selector, exchangeRate)
+        );
         firstOtcMarket.createOffer{value: cost}(
             secondChain,
             address(this),
             address(firstToken),
             address(secondToken),
             AMOUNT,
-            0
-        );
-
-        vm.expectRevert(abi.encodeWithSelector(IOtcMarket.InvalidPrice.selector, 0, 0));
-        firstOtcMarket.createOffer{value: cost}(
-            secondChain,
-            address(this),
-            address(firstToken),
-            address(secondToken),
-            0,
-            0
+            exchangeRate
         );
     }
 

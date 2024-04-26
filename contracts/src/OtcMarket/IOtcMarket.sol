@@ -36,14 +36,19 @@ interface IOtcMarket {
     error InvalidMessageOrder(uint256 recentReceivedMessage);
 
     /**
-     * @dev Zero as amount or exchange rate
-     */
-    error InvalidPrice(uint256 amount, uint128 exchangeRate);
-
-    /**
      * @dev Tried to accept an offer for an amount exceeding the available offer amount.
      */
     error ExcessiveAmount(uint128 amount, uint128 offerAmount);
+
+    /**
+     * @dev Too small amount to create of accept offer.
+     */
+    error InsufficientAmount(uint128 amount);
+
+    /**
+     * @dev Too small exchange rate.
+     */
+    error InsufficientExchangeRate(uint128 exchangeRate);
 
     /**
      * @dev Provided value is less than required.
