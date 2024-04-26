@@ -1,9 +1,9 @@
-[submodule "contracts/lib/forge-std"]
-	path = contracts/lib/forge-std
+[submodule "erc20-erc20/contracts/lib/forge-std"]
+	path = erc20-erc20/contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "contracts/lib/openzeppelin-contracts"]
-	path = contracts/lib/openzeppelin-contracts
+[submodule "erc20-erc20/contracts/lib/openzeppelin-contracts"]
+	path = erc20-erc20/contracts/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
-[submodule "contracts/lib/wormhole-solidity-sdk"]
-	path = contracts/lib/wormhole-solidity-sdk
+[submodule "erc20-erc20/contracts/lib/wormhole-solidity-sdk"]
+	path = erc20-erc20/contracts/lib/wormhole-solidity-sdk
 	url = https://github.com/wormhole-foundation/wormhole-solidity-sdk
