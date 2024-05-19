@@ -115,30 +115,30 @@ describe("hello", () => {
   const wallet = provider.wallet as anchor.Wallet;
   const program = anchor.workspace.OtcMarket as Program<OtcMarket>;
 
-  // it("should initialize", async () => {
-  //   console.log("Program ID", program.programId);
-  //   const wormholeAccounts = getPostMessageCpiAccounts(
-  //     program.programId,
-  //     CORE_BRIDGE_PID,
-  //     wallet.publicKey,
-  //     deriveAddress([Buffer.from("alive")], program.programId)
-  //   );
+  it("should initialize", async () => {
+    console.log("Program ID", program.programId);
+    const wormholeAccounts = getPostMessageCpiAccounts(
+      program.programId,
+      CORE_BRIDGE_PID,
+      wallet.publicKey,
+      deriveAddress([Buffer.from("alive")], program.programId)
+    );
 
-  //   const realInitializeAccounts = {
-  //     owner: wallet.publicKey,
-  //     config: deriveAddress([Buffer.from("config")], program.programId),
-  //     wormholeProgram: CORE_BRIDGE_PID,
-  //     ...wormholeAccounts,
-  //     wormholeMessage: deriveWormholeMessageKey(program.programId, 1n),
-  //   };
-  //   const txHash = await program.methods
-  //     .initialize()
-  //     .accounts({
-  //       ...realInitializeAccounts,
-  //     })
-  //     .rpc();
-  //   console.log(txHash);
-  // });
+    const realInitializeAccounts = {
+      owner: wallet.publicKey,
+      config: deriveAddress([Buffer.from("config")], program.programId),
+      wormholeProgram: CORE_BRIDGE_PID,
+      ...wormholeAccounts,
+      wormholeMessage: deriveWormholeMessageKey(program.programId, 1n),
+    };
+    const txHash = await program.methods
+      .initialize()
+      .accounts({
+        ...realInitializeAccounts,
+      })
+      .rpc();
+    console.log(txHash);
+  });
 
   it("should send concurrent message", async function () {
     const message = Buffer.from("All your base are belong to us");
@@ -175,74 +175,74 @@ describe("hello", () => {
     console.log(txHash);
   });
 
-  // it("should register foreign emitter", async function () {
-  //   const chain = 10;
+  it("should register foreign emitter", async function () {
+    const chain = 10;
 
-  //   const address = "Fc642eEDBb585ee8667e0256FaFeD6ce73939a0f";
-  //   const addressBuffer = Buffer.from(address, "hex");
-  //   const emitterAddress = Buffer.alloc(32);
+    const address = "Fc642eEDBb585ee8667e0256FaFeD6ce73939a0f";
+    const addressBuffer = Buffer.from(address, "hex");
+    const emitterAddress = Buffer.alloc(32);
 
-  //   addressBuffer.copy(emitterAddress, 12);
+    addressBuffer.copy(emitterAddress, 12);
 
-  //   console.log(emitterAddress);
+    console.log(emitterAddress);
 
-  //   const owner = wallet.publicKey;
-  //   const config = deriveAddress([Buffer.from("config")], program.programId);
-  //   const foreignEmitter = deriveForeignEmitterKey(program.programId, chain);
+    const owner = wallet.publicKey;
+    const config = deriveAddress([Buffer.from("config")], program.programId);
+    const foreignEmitter = deriveForeignEmitterKey(program.programId, chain);
 
-  //   const txHash = await program.methods
-  //     .registerEmitter(chain, [...emitterAddress])
-  //     .accounts({
-  //       owner,
-  //       config,
-  //       foreignEmitter,
-  //     })
-  //     .rpc();
+    const txHash = await program.methods
+      .registerEmitter(chain, [...emitterAddress])
+      .accounts({
+        owner,
+        config,
+        foreignEmitter,
+      })
+      .rpc();
 
-  //   console.log(txHash);
-  // });
+    console.log(txHash);
+  });
 
-  // it("should post vaa", async function () {
-  //   const signedVaa = (await readVaaFromFile("tests/VAA")) as SignedVaa;
+  it("should post vaa", async function () {
+    const signedVaa = (await readVaaFromFile("tests/VAA")) as SignedVaa;
 
-  //   const secretKey = wallet.payer.secretKey;
-  //   const PAYER_KEYPAIR = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-  //   const wallet_2 = payerToWallet(PAYER_KEYPAIR);
-  //   await postVaaSolana(
-  //     provider.connection,
-  //     wallet_2.signTransaction,
-  //     CORE_BRIDGE_PID,
-  //     wallet_2.key(),
-  //     Buffer.from(signedVaa)
-  //   );
-  // });
+    const secretKey = wallet.payer.secretKey;
+    const PAYER_KEYPAIR = Keypair.fromSecretKey(Uint8Array.from(secretKey));
+    const wallet_2 = payerToWallet(PAYER_KEYPAIR);
+    await postVaaSolana(
+      provider.connection,
+      wallet_2.signTransaction,
+      CORE_BRIDGE_PID,
+      wallet_2.key(),
+      Buffer.from(signedVaa)
+    );
+  });
 
-  // it("should receive vaa", async function () {
-  //   const config = deriveAddress([Buffer.from("config")], program.programId);
+  it("should receive vaa", async function () {
+    const config = deriveAddress([Buffer.from("config")], program.programId);
 
-  //   const VAA = (await readVaaFromFile("tests/VAA")) as SignedVaa;
+    const VAA = (await readVaaFromFile("tests/VAA")) as SignedVaa;
 
-  //   const parsed = isBytes(VAA) ? parseVaa(VAA) : VAA;
+    const parsed = isBytes(VAA) ? parseVaa(VAA) : VAA;
 
-  //   const txHash = await program.methods
-  //     .receiveMessage([...parsed.hash])
-  //     .accounts({
-  //       payer: wallet.payer.publicKey,
-  //       config: config,
-  //       wormholeProgram: CORE_BRIDGE_PID,
-  //       posted: wormhole.derivePostedVaaKey(CORE_BRIDGE_PID, parsed.hash),
-  //       foreignEmitter: deriveForeignEmitterKey(
-  //         program.programId,
-  //         parsed.emitterChain as ChainId
-  //       ),
-  //       received: deriveReceivedKey(
-  //         program.programId,
-  //         parsed.emitterChain as ChainId,
-  //         parsed.sequence
-  //       ),
-  //     })
-  //     .rpc();
+    const txHash = await program.methods
+      .receiveMessage([...parsed.hash])
+      .accounts({
+        payer: wallet.payer.publicKey,
+        config: config,
+        wormholeProgram: CORE_BRIDGE_PID,
+        posted: wormhole.derivePostedVaaKey(CORE_BRIDGE_PID, parsed.hash),
+        foreignEmitter: deriveForeignEmitterKey(
+          program.programId,
+          parsed.emitterChain as ChainId
+        ),
+        received: deriveReceivedKey(
+          program.programId,
+          parsed.emitterChain as ChainId,
+          parsed.sequence
+        ),
+      })
+      .rpc();
 
-  //   console.log(txHash);
-  // });
+    console.log(txHash);
+  });
 });
