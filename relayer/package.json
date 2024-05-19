@@ -1,5 +1,5 @@
 {
-  "name": "relayer-test",
+  "name": "relayer",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,7 +12,12 @@
     "@certusone/wormhole-sdk": "^0.10.15",
     "@coral-xyz/anchor": "^0.28.0",
     "@wormhole-foundation/relayer-engine": "^0.3.2",
-    "typescript": "^5.4.5",
-    "ts-mocha": "^10.0.0"
+    "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.16",
+    "@types/mocha": "^10.0.6",
+    "chai": "^5.1.1",
+    "mocha": "^10.4.0"
   }
 }

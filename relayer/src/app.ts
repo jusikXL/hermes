@@ -5,10 +5,7 @@ import {
 } from "@wormhole-foundation/relayer-engine";
 import { CHAIN_ID_FANTOM } from "@certusone/wormhole-sdk";
 
-import {transferVaa} from './controller';
-
-
-
+import { transferVaa } from "./controller";
 
 (async function main() {
   const app = new StandardRelayerApp<StandardRelayerContext>(
@@ -19,7 +16,6 @@ import {transferVaa} from './controller';
       name: `ExampleRelayer`,
     }
   );
-
 
   app
     .chain(CHAIN_ID_FANTOM)
