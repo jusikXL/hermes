@@ -7,3 +7,6 @@
 [submodule "erc20-erc20/contracts/lib/wormhole-solidity-sdk"]
 	path = erc20-erc20/contracts/lib/wormhole-solidity-sdk
 	url = https://github.com/wormhole-foundation/wormhole-solidity-sdk
+[submodule "evm/contracts/lib/forge-std"]
+	path = evm/contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
