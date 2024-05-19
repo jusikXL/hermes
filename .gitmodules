@@ -13,3 +13,6 @@
 [submodule "evm/contracts/lib/openzeppelin-contracts"]
 	path = evm/contracts/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "evm/contracts/lib/wormhole-solidity-sdk"]
+	path = evm/contracts/lib/wormhole-solidity-sdk
+	url = https://github.com/wormhole-foundation/wormhole-solidity-sdk
