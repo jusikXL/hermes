@@ -32,6 +32,6 @@ spy \
 
 `docker run --rm -p 6379:6379 --name redis-docker -d redis`
 
-## **Start the relayer**
+## **Start Relayer**
 
 `anchor test`
