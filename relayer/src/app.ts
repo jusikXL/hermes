@@ -23,10 +23,16 @@ import { transferVaa } from "./controller";
       [CHAIN_ID_FANTOM]: "0xFc642eEDBb585ee8667e0256FaFeD6ce73939a0f",
     },
     async (ctx, next) => {
-      const vaa_bytes = ctx.vaaBytes;
+      //const vaa_bytes = ctx.vaaBytes;
+
+      switch (ctx.vaa?.emitterChain) {
+        case CHAIN_ID_SOLANA:
+          transferVaa(ctx);
+        case CHAIN_ID_FANTOM:
+      }
 
       ctx.logger.warn("Got a VAA");
-      // transferVaa(ctx);
+
       // ctx.logger.info(`chain middleware - ${seq} - ${ctx.sourceTxHash}`);
 
       // invoke the next layer in the middleware pipeline

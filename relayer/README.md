@@ -18,20 +18,16 @@ You must have Rust, Solana 1.16.16, Yarn, and Anchor 0.28.0 installed. Installat
 
 ### Wormhole Testnet Spy
 
-```bash
-docker run --platform=linux/amd64 \
--p 7073:7073 \
---entrypoint /guardiand ghcr.io/wormhole-foundation/guardiand:latest \
-spy \
---nodeKey /node.key \
---spyRPC "[::]:7073" \
---env testnet
-```
+`npm run spy`
 
 ### Redis Persistence
 
-`docker run --rm -p 6379:6379 --name redis-docker -d redis`
+`npm run redis`
 
-## **Start Relayer**
+### Refetch EVM contracts ABI
+
+`npx wagmi generate --watch`
+
+## Start Relayer
 
 `anchor test`

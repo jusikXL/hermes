@@ -13,8 +13,10 @@
   "dependencies": {
     "@certusone/wormhole-sdk": "^0.10.15",
     "@coral-xyz/anchor": "^0.28.0",
+    "@wagmi/cli": "^2.1.7",
     "@wormhole-foundation/relayer-engine": "^0.3.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "viem": "^2.11.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.16",
