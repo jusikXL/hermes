@@ -3,7 +3,7 @@ import {
   StandardRelayerApp,
   StandardRelayerContext,
 } from "@wormhole-foundation/relayer-engine";
-import { CHAIN_ID_FANTOM } from "@certusone/wormhole-sdk";
+import { CHAIN_ID_FANTOM, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
 
 import { transferVaa } from "./controller";
 
@@ -17,26 +17,22 @@ import { transferVaa } from "./controller";
     }
   );
 
-  app
-    .chain(CHAIN_ID_FANTOM)
-    .address(
-      "0xFc642eEDBb585ee8667e0256FaFeD6ce73939a0f",
-      async (ctx, next) => {
-        const vaa_bytes = ctx.vaaBytes;
+  app.multiple(
+    {
+      [CHAIN_ID_SOLANA]: "J8QPQeVKdQ3VvjaEcuzmjnos99AmesfFRNSiVms9apdn",
+      [CHAIN_ID_FANTOM]: "0xFc642eEDBb585ee8667e0256FaFeD6ce73939a0f",
+    },
+    async (ctx, next) => {
+      const vaa_bytes = ctx.vaaBytes;
 
-        transferVaa(ctx);
-        // ctx.logger.info(`chain middleware - ${seq} - ${ctx.sourceTxHash}`);
+      ctx.logger.warn("Got a VAA");
+      // transferVaa(ctx);
+      // ctx.logger.info(`chain middleware - ${seq} - ${ctx.sourceTxHash}`);
 
-        // invoke the next layer in the middleware pipeline
-        await next();
-      }
-    );
-
-  // passing a function with 3 args will be used to process errors
-  // (whenever you throw from your middleware)
-  app.use(async (err, ctx, next) => {
-    ctx.logger.error("error middleware triggered");
-  });
+      // invoke the next layer in the middleware pipeline
+      await next();
+    }
+  );
 
   await app.listen();
 })();

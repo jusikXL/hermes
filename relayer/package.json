@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/app.ts"
+    "start": "ts-node src/app.ts",
+    "spy": "docker run --platform=linux/amd64 -p 7073:7073 --entrypoint /guardiand ghcr.io/wormhole-foundation/guardiand:latest spy --nodeKey /node.key --spyRPC \"[::]:7073\" --env testnet",
+    "redis": "docker run --rm -p 6379:6379 --name redis-docker -d redis"
   },
   "author": "",
   "license": "ISC",
