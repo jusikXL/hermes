@@ -1,6 +1,6 @@
 import { defineConfig } from "@wagmi/cli";
 import { blockExplorer } from "@wagmi/cli/plugins";
-import { evmAddress, evmChain } from "./src/contants";
+import { evmAddress, evmChain } from "./src/constants";
 
 export default defineConfig({
   out: "src/config/evm/abi.ts",
