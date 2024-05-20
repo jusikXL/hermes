@@ -6,6 +6,9 @@ import {
 import { CHAIN_ID_FANTOM, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
 
 import { transferVaa } from "./controller";
+import { otcMarketConfig } from "./config/evm/abi";
+import { client } from "./config/evm/client";
+import { evmAddress, solanaAddress } from "./contants";
 
 (async function main() {
   const app = new StandardRelayerApp<StandardRelayerContext>(
@@ -16,29 +19,40 @@ import { transferVaa } from "./controller";
       name: `ExampleRelayer`,
     }
   );
-
   app.multiple(
     {
-      [CHAIN_ID_SOLANA]: "J8QPQeVKdQ3VvjaEcuzmjnos99AmesfFRNSiVms9apdn",
-      [CHAIN_ID_FANTOM]: "0xFc642eEDBb585ee8667e0256FaFeD6ce73939a0f",
+      [CHAIN_ID_SOLANA]: solanaAddress,
+      [CHAIN_ID_FANTOM]: evmAddress,
     },
     async (ctx, next) => {
-      //const vaa_bytes = ctx.vaaBytes;
-
-      switch (ctx.vaa?.emitterChain) {
-        case CHAIN_ID_SOLANA:
-          transferVaa(ctx);
-        case CHAIN_ID_FANTOM:
-      }
-
       ctx.logger.warn("Got a VAA");
 
-      // ctx.logger.info(`chain middleware - ${seq} - ${ctx.sourceTxHash}`);
+      const vaaBytes = ctx.vaaBytes;
+      if (vaaBytes) {
+        const vaaHex: `0x${string}` = `0x${Buffer.from(vaaBytes).toString(
+          "hex"
+        )}`;
+
+        ctx.logger.warn(vaaHex);
+
+        switch (ctx.vaa?.emitterChain) {
+          case CHAIN_ID_SOLANA:
+            const txHash = await client.writeContract({
+              ...otcMarketConfig,
+              functionName: "receiveMessage",
+              args: [vaaHex],
+            });
+            ctx.logger.warn(txHash);
+            break;
+          case CHAIN_ID_FANTOM:
+            transferVaa(ctx);
+            break;
+        }
+      }
 
       // invoke the next layer in the middleware pipeline
       await next();
     }
   );
-
   await app.listen();
 })();
