@@ -6,9 +6,13 @@ import {
 import { CHAIN_ID_FANTOM, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
 
 import { transferVaa } from "./controller";
+import {provider} from "./config/solana/solanaClient";
+
 import { otcMarketConfig } from "./config/evm/abi";
 import { client } from "./config/evm/client";
-import { evmAddress, solanaAddress } from "./contants";
+import { evmAddress, solanaAddress } from "./constants";
+
+const { provider: solana_provider, program: solana_program } = provider();
 
 (async function main() {
   const app = new StandardRelayerApp<StandardRelayerContext>(
@@ -19,6 +23,7 @@ import { evmAddress, solanaAddress } from "./contants";
       name: `ExampleRelayer`,
     }
   );
+  
   app.multiple(
     {
       [CHAIN_ID_SOLANA]: solanaAddress,
@@ -33,19 +38,17 @@ import { evmAddress, solanaAddress } from "./contants";
           "hex"
         )}`;
 
-        ctx.logger.warn(vaaHex);
 
         switch (ctx.vaa?.emitterChain) {
           case CHAIN_ID_SOLANA:
-            const txHash = await client.writeContract({
+            await client.writeContract({
               ...otcMarketConfig,
               functionName: "receiveMessage",
               args: [vaaHex],
             });
-            ctx.logger.warn(txHash);
             break;
           case CHAIN_ID_FANTOM:
-            transferVaa(ctx);
+            transferVaa(solana_provider, solana_program, ctx);
             break;
         }
       }

@@ -1,4 +1,4 @@
-import { Connection, PublicKey, Keypair, Signer, PublicKeyInitData } from "@solana/web3.js";
+import {clusterApiUrl, Connection, PublicKey, Keypair, Signer, PublicKeyInitData } from "@solana/web3.js";
 import {
     CONTRACTS,
     isBytes,
@@ -75,11 +75,10 @@ export function deriveForeignEmitterKey(programId: PublicKey, chain: ChainId) {
 const payerToWallet = (payer: Signer) =>
     NodeWallet.fromSecretKey(payer.secretKey);
 
-export async function transferVaa(ctx: StandardRelayerContext) {
-    const provider = anchor.AnchorProvider.env();
-    anchor.setProvider(provider);
+export async function transferVaa(provider: anchor.AnchorProvider, program: Program<OtcMarket>, ctx: StandardRelayerContext) {
+
     const wallet = provider.wallet as anchor.Wallet;
-    const program = anchor.workspace.OtcMarket as Program<OtcMarket>;
+    
     const vaa = ctx.vaaBytes;
     if (!isBytes(vaa)) {
         throw new Error("Invalid VAA");
