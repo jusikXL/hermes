@@ -1,7 +1,7 @@
 import { http, createWalletClient, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-import { evmChain } from "../../contants";
+import { evmChain } from "../../constants";
 
 export const account = privateKeyToAccount("0x000");
 
