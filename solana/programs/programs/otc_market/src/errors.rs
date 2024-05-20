@@ -40,8 +40,10 @@ pub enum OtcMarketError {
     InvalidMessage,
 
     #[msg("InsufficientAmount")]
+    /// Too small amount.
     InsufficientAmount,
 
     #[msg("InsufficientRate")]
+    /// Too small rate.
     InsufficientRate,
 }

@@ -10,7 +10,7 @@ pub mod instructions;
 pub mod message;
 pub mod state;
 
-declare_id!("n44B2i7iW7txBg3JqHrJPaeiF83b2jk95SHg28SutyW");
+declare_id!("55YVdBZi251g3gMtWVs4Mohmq7bgsypKpSycHrFH56wX");
 
 #[program]
 /// # Hello World (Scaffolding Example #1)

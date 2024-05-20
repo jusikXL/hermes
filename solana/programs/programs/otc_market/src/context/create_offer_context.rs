@@ -9,10 +9,13 @@ use crate::{
 };
 
 #[derive(Accounts)]
-#[instruction(target_chain: u16, target_token_address: [u8; 32], exchange_rate: u128)]
+#[instruction(
+    target_chain: u16,
+    target_token_address: [u8; 32], 
+    exchange_rate: u64
+)]
 pub struct CreateOffer<'info> {
     #[account(mut)]
-    /// Seller will pay Wormhole fee to post a message.
     pub seller: Signer<'info>,
 
     #[account(
@@ -74,20 +77,25 @@ pub struct CreateOffer<'info> {
             ForeignEmitter::SEED_PREFIX,
             &target_chain.to_le_bytes()[..]
         ],
-        bump
+        bump,
+        // maybe some further verification needed ❓
     )]
-    /// Foreign emitter account.
+    /// Foreign emitter account. Target OTC Market.
     /// Read-only.
     pub foreign_emitter: Account<'info, ForeignEmitter>,
 
     #[account(mut)]
-    /// seller ata
+    /// Seller's source token account
+    /// We transfer `source_token_amount` from this account to escrow.
     pub seller_ata: Account<'info, TokenAccount>,
 
+    #[account()]
+    /// Source token account. 
+    /// Used to carry `transfer_checked`.
     pub source_token: Account<'info, Mint>,
 
     #[account(mut)]
-    /// escrow ata
+    /// Escrow token account.
     pub escrow: Account<'info, TokenAccount>,
 
     #[account(
@@ -95,25 +103,24 @@ pub struct CreateOffer<'info> {
         payer = seller,
         seeds = [
             Offer::SEED_PREFIX,
-            seller.key().as_ref(), // seller_source_address
-            &1u16.to_le_bytes(), // source chain
+            seller.key().as_ref(), // seller source address ❓
+            &Offer::CHAIN_ID.to_le_bytes(), // source chain
             &target_chain.to_le_bytes(), // target chain
-            &seller_ata.mint.as_ref(), // source token address
-            // &source_token.key().as_ref()
-            &target_token_address, // target token address 
-            &exchange_rate.to_le_bytes()
+            &source_token.key().as_ref(), // source token address ❓
+            &target_token_address, // target token address ❓
+            &exchange_rate.to_le_bytes() // exchange rate
         ],
         bump,
         space = Offer::MAXIMUM_SIZE
     )]
-    /// Offer account.
+    /// Offer account. Has a unique pda.
     pub offer: Account<'info, Offer>,
-
-    /// System program.
-    pub system_program: Program<'info, System>,
 
     /// Token program.
     pub token_program: Program<'info, Token>,
+
+    /// System program.
+    pub system_program: Program<'info, System>,
 
     /// Clock sysvar.
     pub clock: Sysvar<'info, Clock>,

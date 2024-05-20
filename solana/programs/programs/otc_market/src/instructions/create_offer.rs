@@ -16,64 +16,73 @@ pub fn create_offer(
     exchange_rate: u64,
     decimals: u8,
 ) -> Result<()> {
-    // validate_offer_params
-    // 1. should fail if payment for msg fee failed
-    let fee = ctx.accounts.wormhole_bridge.fee();
-    if fee > 0 {
-        solana_program::program::invoke(
-            &solana_program::system_instruction::transfer(
-                &ctx.accounts.seller.key(),
-                &ctx.accounts.wormhole_fee_collector.key(),
-                fee,
-            ),
-            &ctx.accounts.to_account_infos(),
-        )?;
-    }
-    // 2. should fail if the foreign emitter is not listed
-    // 3. should fail if insufficient amount
-    require!(
-        source_token_amount > Offer::MINIMUM_AMOUNT,
-        OtcMarketError::InsufficientAmount,
-    );
-    // 4. should fail if insufficient rate
-    require!(
-        exchange_rate > Offer::MINIMUM_RATE,
-        OtcMarketError::InsufficientRate,
-    );
+    // Validate offer params.
+    {
+        // 1. Should fail if payment for msg fee failed.
+        let fee = ctx.accounts.wormhole_bridge.fee();
+        if fee > 0 {
+            solana_program::program::invoke(
+                &solana_program::system_instruction::transfer(
+                    &ctx.accounts.seller.key(),
+                    &ctx.accounts.wormhole_fee_collector.key(),
+                    fee,
+                ),
+                &ctx.accounts.to_account_infos(),
+            )?;
+        }
 
-    // hash_offer:
-    // offer account PDA should have been created
-    // TODO: check OfferAlreadyExists | https://www.rareskills.io/post/init-if-needed-anchor
-    // Set Offer related params.
+        // 2. Should fail if the foreign emitter is not listed.
+
+        // 3. Should fail if insufficient amount.
+        require!(
+            source_token_amount > Offer::MINIMUM_AMOUNT,
+            OtcMarketError::InsufficientAmount,
+        );
+
+        // 4. Should fail if insufficient rate.
+        require!(
+            exchange_rate > Offer::MINIMUM_RATE,
+            OtcMarketError::InsufficientRate,
+        );
+
+        // 5. should fail if offer already exists | https://www.rareskills.io/post/init-if-needed-anchor.
+    }
+
+    let seller_source_address = ctx.accounts.seller.key().to_bytes();
+    let source_token_address = ctx.accounts.source_token.key().to_bytes();
+    let source_chain = Offer::CHAIN_ID;
+
+    // Hash offer.
     {
         let offer = &mut ctx.accounts.offer;
 
+        // Set offer related params.
         offer.bump = *ctx.bumps.get("offer").ok_or(OtcMarketError::BumpNotFound)?;
-
-        offer.seller_source_address = ctx.accounts.seller.key().to_bytes();
+        offer.seller_source_address = seller_source_address;
         offer.seller_target_address = seller_target_address;
-        offer.source_chain = Offer::CHAIN_ID;
+        offer.source_chain = source_chain;
         offer.target_chain = target_chain;
-        offer.source_token_address = ctx.accounts.source_token.key().to_bytes();
+        offer.source_token_address = source_token_address;
         offer.target_token_address = target_token_address;
         offer.source_token_amount = source_token_amount;
         offer.exchange_rate = exchange_rate;
+        // TODO: can be refactored ❓
     }
 
-    // Emit event
+    // Emit event.
     emit!(OfferCreated {
         offer_id: ctx.accounts.offer.key(),
-        seller_source_address: ctx.accounts.seller.key().to_bytes(),
+        seller_source_address,
         seller_target_address,
-        source_chain: Offer::CHAIN_ID,
+        source_chain,
         target_chain,
-        source_token_address: ctx.accounts.source_token.key().to_bytes(),
+        source_token_address,
         target_token_address,
         source_token_amount,
         exchange_rate,
     });
 
-    // Lock source token
+    // Lock source token.
     {
         let cpi_accounts = TransferChecked {
             from: ctx.accounts.seller_ata.to_account_info(),
@@ -82,8 +91,8 @@ pub fn create_offer(
             authority: ctx.accounts.seller.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
         transfer_checked(cpi_ctx, source_token_amount, decimals)?;
     }
 
@@ -92,11 +101,11 @@ pub fn create_offer(
     let config = &ctx.accounts.config;
 
     let payload: Vec<u8> = OtcMarketMessage::OfferCreated {
-        seller_source_address: ctx.accounts.seller.key().to_bytes(),
+        seller_source_address,
         seller_target_address,
-        source_chain: Offer::CHAIN_ID,
+        source_chain,
         target_chain,
-        source_token_address: ctx.accounts.source_token.key().to_bytes(),
+        source_token_address,
         target_token_address,
         source_token_amount,
         exchange_rate,
@@ -128,7 +137,7 @@ pub fn create_offer(
                 ],
                 &[wormhole::SEED_PREFIX_EMITTER, &[wormhole_emitter.bump]],
             ],
-            // maybe offer should also sign
+            // maybe offer should also sign ❓
         ),
         config.batch_id,
         payload,

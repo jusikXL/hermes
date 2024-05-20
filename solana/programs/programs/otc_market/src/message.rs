@@ -23,11 +23,11 @@ pub enum OtcMarketMessage {
         message: Vec<u8>,
     },
     OfferCreated {
-        seller_source_address: [u8; 32], // Pubkey?
+        seller_source_address: [u8; 32],
         seller_target_address: [u8; 32],
         source_chain: u16,
         target_chain: u16,
-        source_token_address: [u8; 32], // Pubkey?
+        source_token_address: [u8; 32],
         target_token_address: [u8; 32],
         source_token_amount: u64,
         exchange_rate: u64,
@@ -66,7 +66,7 @@ impl AnchorSerialize for OtcMarketMessage {
                 source_token_amount,
                 exchange_rate,
             } => {
-                // TODO: serialize differently?
+                // TODO: serialize differently ❓
                 PAYLOAD_ID_OFFER_CREATED.serialize(writer)?;
                 seller_source_address.serialize(writer)?;
                 seller_target_address.serialize(writer)?;
@@ -107,7 +107,7 @@ impl AnchorDeserialize for OtcMarketMessage {
                 }
             }
             PAYLOAD_ID_OFFER_CREATED => {
-                // TODO: deserialize differently?
+                // TODO: deserialize differently ❓
                 let seller_source_address = {
                     let mut out = [0u8; 32];
                     out.copy_from_slice(&buf[1..33]);
@@ -297,4 +297,6 @@ pub mod test {
 
         Ok(())
     }
+
+    // TODO: test_message_offer_created
 }
