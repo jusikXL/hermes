@@ -17,7 +17,6 @@ import { StandardRelayerContext } from "@wormhole-foundation/relayer-engine";
 
 import { NodeWallet, deriveAddress} from "@certusone/wormhole-sdk/lib/cjs/solana";
 
-import { OtcMarket } from "../target/types/otc_market";
 
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
@@ -75,7 +74,7 @@ export function deriveForeignEmitterKey(programId: PublicKey, chain: ChainId) {
 const payerToWallet = (payer: Signer) =>
     NodeWallet.fromSecretKey(payer.secretKey);
 
-export async function transferVaa(provider: anchor.AnchorProvider, program: Program<OtcMarket>, ctx: StandardRelayerContext) {
+export async function transferVaa(provider: anchor.AnchorProvider, program: Program<anchor.Idl>, ctx: StandardRelayerContext) {
 
     const wallet = provider.wallet as anchor.Wallet;
     
@@ -83,15 +82,30 @@ export async function transferVaa(provider: anchor.AnchorProvider, program: Prog
     if (!isBytes(vaa)) {
         throw new Error("Invalid VAA");
     }
+    
     ctx.logger.warn("VAA with hash:", getHashFromBuffer(Buffer.from(vaa)));
-    const post_txHash = await postVaa(vaa, wallet.payer.secretKey, provider.connection);
-    console.log('VAA posted, tx:', post_txHash);
+    try {
+      const post_txHash = await postVaa(vaa, wallet.payer.secretKey, provider.connection);
+      console.log('VAA posted, tx:', post_txHash);
+    }
+    catch (e) {
+      console.log("Error posting VAA");
+      ctx.logger.error(e);
+    }
+
 
     // const register = await registerEmitter(vaa, wallet.publicKey, program);
     // console.log('Emitter registered, tx:', register);
 
-    const send_txHash = await sendVaa(vaa, program, wallet.payer.publicKey);
-    console.log('VAA sent, tx:', send_txHash);
+    try{
+      const send_txHash = await sendVaa(vaa, program, wallet.payer.publicKey);
+      console.log('VAA sent, tx:', send_txHash);
+    }
+    catch (e) {
+      console.log("Error sending VAA");
+      ctx.logger.error(e);
+    }
+    
 }
 
 async function postVaa(vaa: SignedVaa, secretKey: Uint8Array, connection: Connection) {
@@ -140,7 +154,7 @@ async function postVaa(vaa: SignedVaa, secretKey: Uint8Array, connection: Connec
 //     return txHash;
 // }
 
-async function sendVaa(vaa: SignedVaa, program: anchor.Program<OtcMarket>, payer: PublicKey){
+async function sendVaa(vaa: SignedVaa, program: anchor.Program<anchor.Idl>, payer: PublicKey){
     const config = deriveAddress([Buffer.from("config")], program.programId);
 
     const parsed = isBytes(vaa) ? parseVaa(vaa) : vaa;

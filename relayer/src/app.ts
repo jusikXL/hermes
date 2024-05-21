@@ -5,15 +5,11 @@ import {
 } from "@wormhole-foundation/relayer-engine";
 import { CHAIN_ID_FANTOM, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
 import { transferVaa } from "./controller";
-
 import { otcMarketConfig } from "./evm/config";
 import { client } from "./evm/client";
-
-import { provider } from "./solana/client";
-
+import { provider, program } from "./solana/client";
 import { evmAddress, solanaProgramId } from "./address";
 
-const { provider: solana_provider, program: solana_program } = provider();
 
 (async function main() {
   const app = new StandardRelayerApp<StandardRelayerContext>(
@@ -48,7 +44,7 @@ const { provider: solana_provider, program: solana_program } = provider();
             });
             break;
           case CHAIN_ID_FANTOM:
-            transferVaa(solana_provider, solana_program, ctx);
+            transferVaa(provider, program, ctx);
             break;
         }
       }
