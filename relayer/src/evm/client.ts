@@ -1,15 +1,16 @@
 import { http, createWalletClient, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-import { evmChain } from "./config/chain";
 import { getFromEnvironment } from "../lib/utils";
+import { chain } from ".";
 
 const privateKey = getFromEnvironment("EVM_PRIVATE_KEY");
+const account = privateKeyToAccount(privateKey as `0x${string}`);
 
-export const account = privateKeyToAccount(privateKey as `0x${string}`);
-
-export const client = createWalletClient({
+const client = createWalletClient({
   account,
-  chain: evmChain,
+  chain: chain,
   transport: http(),
 }).extend(publicActions);
+
+export default client;

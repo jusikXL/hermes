@@ -1,7 +1,7 @@
 import { fantomTestnet } from "viem/chains";
 import { defineChain } from "viem";
 
-export const evmChain = defineChain({
+export const chain = defineChain({
   ...fantomTestnet,
   blockExplorers: {
     default: {
@@ -10,3 +10,5 @@ export const evmChain = defineChain({
     },
   },
 });
+
+export default chain;

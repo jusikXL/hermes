@@ -3,7 +3,7 @@ import { CHAIN_ID_FANTOM, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
 import { HermesRelayerContext } from "./app";
 import { transferVaa } from "./controller";
 import { program, provider } from "./solana/client";
-import deliverToEvm from "./evm/deliver";
+import { deliver as deliverToEvm } from "./evm";
 
 export class Controller {
   redeemVaa = async (ctx: HermesRelayerContext, next: Next) => {
