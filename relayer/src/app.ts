@@ -4,9 +4,10 @@ import {
   StandardRelayerContext,
 } from "@wormhole-foundation/relayer-engine";
 import { CHAIN_ID_FANTOM, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
-import { evmAddress, solanaProgramId } from "./address";
-import { Controller } from "./controllerV2";
+import { Controller } from "./controller";
 import { DeliveryContext, delivery } from "./middleware";
+import { programId } from "./solana";
+import { address } from "./evm";
 
 export type HermesRelayerContext = StandardRelayerContext & DeliveryContext;
 
@@ -16,7 +17,7 @@ export type HermesRelayerContext = StandardRelayerContext & DeliveryContext;
     // other app specific config options can be set here for things
     // like retries, logger, or redis connection settings.
     {
-      name: `ExampleRelayer`,
+      name: `HermesRelayer`,
     }
   );
   app.use(delivery());
@@ -25,8 +26,8 @@ export type HermesRelayerContext = StandardRelayerContext & DeliveryContext;
 
   app.multiple(
     {
-      [CHAIN_ID_SOLANA]: solanaProgramId,
-      [CHAIN_ID_FANTOM]: evmAddress,
+      [CHAIN_ID_SOLANA]: programId,
+      [CHAIN_ID_FANTOM]: address,
     },
     controller.redeemVaa
   );

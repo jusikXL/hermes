@@ -1,8 +1,8 @@
-import { client, otcMarketConfig } from ".";
+import { client, config } from ".";
 
 export default async function deliver(vaaHex: `0x${string}`) {
   return client.writeContract({
-    ...otcMarketConfig,
+    ...config,
     functionName: "receiveMessage",
     args: [vaaHex],
   });

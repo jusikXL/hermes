@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-export const getFromEnvironment = (variableName: string) => {
+export default function getFromEnvironment(variableName: string) {
   const variable = process.env[variableName];
 
   if (!variable) {
@@ -8,4 +8,4 @@ export const getFromEnvironment = (variableName: string) => {
   }
 
   return variable;
-};
+}

@@ -30,4 +30,4 @@ You must have Rust, Solana 1.16.16, Yarn, and Anchor 0.28.0 installed. Installat
 
 ## Start Relayer
 
-`anchor test`
+`npm run start`

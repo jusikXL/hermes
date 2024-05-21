@@ -1,7 +1,7 @@
 import { http, createWalletClient, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-import { getFromEnvironment } from "../lib/utils";
+import { getFromEnvironment } from "../lib/helpers";
 import { chain } from ".";
 
 const privateKey = getFromEnvironment("EVM_PRIVATE_KEY");
