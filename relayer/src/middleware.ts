@@ -1,9 +1,10 @@
 import { Context, Middleware } from "@wormhole-foundation/relayer-engine";
-import { client } from "./evm/client";
-import { otcMarketConfig } from "./evm/config";
 
 export interface DeliveryContext extends Context {
-  solanaToEvm(): Promise<void>;
+  deliver: <T extends any[]>(
+    deliverFunction: (...args: T) => Promise<any>,
+    ...args: T
+  ) => Promise<void>;
 }
 
 export function delivery(): Middleware<DeliveryContext> {
@@ -11,21 +12,16 @@ export function delivery(): Middleware<DeliveryContext> {
     const vaaBytes = ctx.vaaBytes;
 
     if (vaaBytes) {
-      const vaaHex: `0x${string}` = `0x${Buffer.from(vaaBytes).toString(
-        "hex"
-      )}`;
-
-      ctx.solanaToEvm = async () => {
+      ctx.deliver = async <T extends any[]>(
+        deliverFunction: (...args: T) => Promise<any>,
+        ...args: T
+      ): Promise<void> => {
         try {
-          ctx.logger?.debug("Delivering from Solana to EVM...");
-          await client.writeContract({
-            ...otcMarketConfig,
-            functionName: "receiveMessage",
-            args: [vaaHex],
-          });
-          ctx.logger?.info("Successfully delivered from Solana to EVM!");
+          ctx.logger?.debug("Initiating delivery...");
+          await deliverFunction(...args);
+          ctx.logger?.info("Delivery completed!");
         } catch (err: any) {
-          ctx.logger?.error(err.message);
+          ctx.logger?.error(`Delivery failed ${err.message}`);
         }
       };
     }

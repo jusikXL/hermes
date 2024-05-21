@@ -3,15 +3,21 @@ import { CHAIN_ID_FANTOM, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
 import { HermesRelayerContext } from "./app";
 import { transferVaa } from "./controller";
 import { program, provider } from "./solana/client";
+import deliverToEvm from "./evm/deliver";
 
 export class Controller {
   redeemVaa = async (ctx: HermesRelayerContext, next: Next) => {
     const vaa = ctx.vaa;
+
     if (vaa) {
-      switch (ctx.vaa?.emitterChain) {
+      const vaaBytes = vaa.bytes;
+      const vaaHex: `0x${string}` = `0x${Buffer.from(vaaBytes).toString(
+        "hex"
+      )}`;
+
+      switch (vaa.emitterChain) {
         case CHAIN_ID_SOLANA:
-          // trigger delivery middleware
-          await ctx.solanaToEvm();
+          await ctx.deliver(deliverToEvm, vaaHex);
           break;
         case CHAIN_ID_FANTOM:
           transferVaa(provider, program, ctx);
