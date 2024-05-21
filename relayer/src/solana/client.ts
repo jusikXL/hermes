@@ -1,24 +1,17 @@
 import * as anchor from "@coral-xyz/anchor";
 import { clusterApiUrl, Connection, Keypair } from "@solana/web3.js";
-import "dotenv/config";
-import { OtcMarket } from "../../target/types/otc_market";
-import { getFromEnvironment } from "../lib/utils";
+import {cluster, OtcMakerIdl, secretKey, solana_program_id } from "./config/config";
 
-const secretkey = Uint8Array.from(
-  JSON.parse(getFromEnvironment("SOLANA_SECRET_KEY"))
-);
 
-export const provider = () => {
-  let connection = new Connection(clusterApiUrl("devnet"));
-  let wallet = new anchor.Wallet(Keypair.fromSecretKey(secretkey));
-  const provider = new anchor.AnchorProvider(connection, wallet, {
-    commitment: "processed",
-  });
-  //const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+let connection = new Connection(clusterApiUrl(cluster));
+let wallet = new anchor.Wallet(Keypair.fromSecretKey(secretKey));
 
-  const program = anchor.workspace.OtcMarket as anchor.Program<OtcMarket>;
+export const provider = new anchor.AnchorProvider(connection, wallet, {
+  commitment: "processed",
+});
 
-  //return {provider, program};
-  return { provider, program };
-};
+anchor.setProvider(provider);
+
+export const program = new anchor.Program(OtcMakerIdl, solana_program_id, provider);
+
+
