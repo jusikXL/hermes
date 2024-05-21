@@ -1,21 +1,26 @@
 {
   "name": "relayer",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Hermes Relayer",
+  "main": "src/app.ts",
   "scripts": {
     "start": "ts-node src/app.ts",
     "spy": "docker run --platform=linux/amd64 -p 7073:7073 --entrypoint /guardiand ghcr.io/wormhole-foundation/guardiand:latest spy --nodeKey /node.key --spyRPC \"[::]:7073\" --env testnet",
     "redis": "docker run --rm -p 6379:6379 --name redis-docker -d redis"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jusikXL/hermes"
+  },
+  "author": "Hermes Foundation",
+  "license": "MIT",
   "dependencies": {
     "@certusone/wormhole-sdk": "^0.10.15",
     "@coral-xyz/anchor": "^0.28.0",
     "@wagmi/cli": "^2.1.7",
     "@wormhole-foundation/relayer-engine": "^0.3.2",
     "@wormhole-foundation/sdk": "^0.6.8",
+    "dotenv": "^16.4.5",
     "typescript": "^5.4.5",
     "viem": "^2.11.0"
   },

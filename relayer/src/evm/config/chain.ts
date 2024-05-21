@@ -10,8 +10,3 @@ export const evmChain = defineChain({
     },
   },
 });
-
-export const evmAddress: `0x${string}` =
-  "0xFc642eEDBb585ee8667e0256FaFeD6ce73939a0f";
-
-export const solanaAddress = "J8QPQeVKdQ3VvjaEcuzmjnos99AmesfFRNSiVms9apdn";
