@@ -1,6 +1,5 @@
 import { http, createWalletClient, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import "dotenv/config";
 
 import { evmChain } from "./config/chain";
 import { getFromEnvironment } from "../lib/utils";

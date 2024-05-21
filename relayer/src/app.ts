@@ -4,15 +4,14 @@ import {
   StandardRelayerContext,
 } from "@wormhole-foundation/relayer-engine";
 import { CHAIN_ID_FANTOM, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
-import { transferVaa } from "./controller";
-import { otcMarketConfig } from "./evm/config";
-import { client } from "./evm/client";
-import { provider, program } from "./solana/client";
 import { evmAddress, solanaProgramId } from "./address";
+import { Controller } from "./controllerV2";
+import { DeliveryContext, delivery } from "./middleware";
 
+export type HermesRelayerContext = StandardRelayerContext & DeliveryContext;
 
 (async function main() {
-  const app = new StandardRelayerApp<StandardRelayerContext>(
+  const app = new StandardRelayerApp<HermesRelayerContext>(
     Environment.TESTNET,
     // other app specific config options can be set here for things
     // like retries, logger, or redis connection settings.
@@ -20,38 +19,17 @@ import { evmAddress, solanaProgramId } from "./address";
       name: `ExampleRelayer`,
     }
   );
+  app.use(delivery());
+
+  const controller = new Controller();
 
   app.multiple(
     {
       [CHAIN_ID_SOLANA]: solanaProgramId,
       [CHAIN_ID_FANTOM]: evmAddress,
     },
-    async (ctx, next) => {
-      ctx.logger.warn("Got a VAA");
-
-      const vaaBytes = ctx.vaaBytes;
-      if (vaaBytes) {
-        const vaaHex: `0x${string}` = `0x${Buffer.from(vaaBytes).toString(
-          "hex"
-        )}`;
-
-        switch (ctx.vaa?.emitterChain) {
-          case CHAIN_ID_SOLANA:
-            await client.writeContract({
-              ...otcMarketConfig,
-              functionName: "receiveMessage",
-              args: [vaaHex],
-            });
-            break;
-          case CHAIN_ID_FANTOM:
-            transferVaa(provider, program, ctx);
-            break;
-        }
-      }
-
-      // invoke the next layer in the middleware pipeline
-      await next();
-    }
+    controller.redeemVaa
   );
+
   await app.listen();
 })();
