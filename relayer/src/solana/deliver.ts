@@ -1,129 +1,54 @@
-import { Connection, PublicKey, Keypair } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
+import { isBytes, parseVaa } from "@certusone/wormhole-sdk";
+import { Wormhole, deserialize, signSendWait } from "@wormhole-foundation/sdk";
+import { program } from "./client";
 import {
-  CONTRACTS,
-  isBytes,
-  parseVaa,
-  SignedVaa,
-  postVaaSolana,
-  ChainId,
-} from "@certusone/wormhole-sdk";
-import * as wormhole from "@certusone/wormhole-sdk/lib/cjs/solana/wormhole";
-import { deriveAddress } from "@certusone/wormhole-sdk/lib/cjs/solana";
-import * as anchor from "@coral-xyz/anchor";
-import {
-  deriveForeignEmitterKey,
-  deriveReceivedKey,
-  payerToWallet,
-} from "../lib/helpers";
-import { program, provider, wallet } from ".";
+  deriveConfig,
+  derivePosted,
+  deriveForeignEmitter,
+  deriveReceived,
+} from "../utils";
+import { DeliveryContext } from "../middleware";
 
-export const CORE_BRIDGE_PID = new PublicKey(CONTRACTS["TESTNET"].solana.core);
+export default async function deliver(ctx: DeliveryContext): Promise<void> {
+  // 1. Verify VAA.
+  const signer = ctx.solanaSigner;
+  const chain = ctx.solanaPlatform.getChain("Solana");
+  const core = ctx.solanaCoreBridge;
+  const signedVaa = ctx.vaa!.bytes; // vaa presence was checked in controller
 
-export default async function deliver(vaaBytes: SignedVaa) {
-  // ctx.logger.warn("VAA with hash:", getHashFromBuffer(Buffer.from(vaa)));
+  const sender = Wormhole.chainAddress(chain.chain, signer.address());
+  const vaa = deserialize("Uint8Array", signedVaa);
 
-  await postVaa(vaaBytes, wallet.payer.secretKey, provider.connection);
-  await sendVaa(vaaBytes, program, wallet.payer.publicKey);
+  const publishTxs = core.verifyMessage(sender.address, vaa);
 
-  // try {
-  //   const post_txHash = await postVaa(
-  //     vaaBytes,
-  //     wallet.payer.secretKey,
-  //     provider.connection
-  //   );
-  //   console.log("VAA posted, tx:", post_txHash);
-  // } catch (e) {
-  //   console.log("Error posting VAA");
-  //   ctx.logger.error(e);
-  // }
+  await signSendWait(chain, publishTxs, signer);
 
-  // const register = await registerEmitter(vaa, wallet.publicKey, program);
-  // console.log('Emitter registered, tx:', register);
+  // 2. Receive VAA.
+  const wormholeProgram = new PublicKey(chain.config.contracts.coreBridge!);
+  const parsedVaa = isBytes(signedVaa) ? parseVaa(signedVaa) : signedVaa;
 
-  // try {
-  //   const send_txHash = await sendVaa(vaa, program, wallet.payer.publicKey);
-  //   console.log("VAA sent, tx:", send_txHash);
-  // } catch (e) {
-  //   console.log("Error sending VAA");
-  //   ctx.logger.error(e);
-  // }
-}
-
-async function postVaa(
-  vaa: SignedVaa,
-  secretKey: Uint8Array,
-  connection: Connection
-) {
-  console.log("Post VAA");
-  const PAYER_KEYPAIR = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-  const wallet_2 = payerToWallet(PAYER_KEYPAIR);
-
-  const txHash = await postVaaSolana(
-    connection,
-    wallet_2.signTransaction,
-    CORE_BRIDGE_PID,
-    wallet_2.key(),
-    Buffer.from(vaa)
+  const config = deriveConfig(program.programId);
+  const posted = derivePosted(wormholeProgram, parsedVaa.hash);
+  const foreignEmitter = deriveForeignEmitter(
+    program.programId,
+    parsedVaa.emitterChain
   );
-  return txHash;
-}
+  const received = deriveReceived(
+    program.programId,
+    parsedVaa.emitterChain,
+    parsedVaa.sequence
+  );
 
-// async function registerEmitter(vaa: SignedVaa, owner: PublicKey, program: anchor.Program<OtcMarket>) {
-
-//     const parsed = isBytes(vaa) ? parseVaa(vaa) : vaa;
-
-//     const chain = parsed.emitterChain;
-//     const emitterAddress = parsed.emitterAddress;
-
-//     // const address = "Fc642eEDBb585ee8667e0256FaFeD6ce73939a0f";
-//     // const addressBuffer = Buffer.from(address, "hex");
-//     // const emitterAddress = Buffer.alloc(32);
-
-//     // addressBuffer.copy(emitterAddress, 12);
-
-//     console.log(emitterAddress);
-//     console.log(chain);
-
-//     const config = deriveAddress([Buffer.from("config")], program.programId);
-//     const foreignEmitter = deriveForeignEmitterKey(program.programId, chain as ChainId);
-
-//     const txHash = await program.methods
-//       .registerEmitter(chain, [...emitterAddress])
-//       .accounts({
-//         owner,
-//         config,
-//         foreignEmitter,
-//       })
-//       .rpc();
-//     return txHash;
-// }
-
-async function sendVaa(
-  vaa: SignedVaa,
-  program: anchor.Program<anchor.Idl>,
-  payer: PublicKey
-) {
-  const config = deriveAddress([Buffer.from("config")], program.programId);
-
-  const parsed = isBytes(vaa) ? parseVaa(vaa) : vaa;
-
-  const txHash = await program.methods
-    .receiveMessage([...parsed.hash])
+  await program.methods
+    .receiveMessage([...parsedVaa.hash])
     .accounts({
-      payer: payer,
+      payer: new PublicKey(signer.address()),
       config: config,
-      wormholeProgram: CORE_BRIDGE_PID,
-      posted: wormhole.derivePostedVaaKey(CORE_BRIDGE_PID, parsed.hash),
-      foreignEmitter: deriveForeignEmitterKey(
-        program.programId,
-        parsed.emitterChain as ChainId
-      ),
-      received: deriveReceivedKey(
-        program.programId,
-        parsed.emitterChain as ChainId,
-        parsed.sequence
-      ),
+      wormholeProgram: wormholeProgram,
+      posted: posted,
+      foreignEmitter: foreignEmitter,
+      received: received,
     })
     .rpc();
-  return txHash;
 }

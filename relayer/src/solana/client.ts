@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { clusterApiUrl, Connection, Keypair } from "@solana/web3.js";
-import { getFromEnvironment } from "../lib/helpers";
+import { getFromEnvironment } from "../utils";
 import { idl, programId } from ".";
 
 export const secretKey = Uint8Array.from(

@@ -3,7 +3,6 @@ import {
   StandardRelayerApp,
   StandardRelayerContext,
 } from "@wormhole-foundation/relayer-engine";
-import { CHAIN_ID_FANTOM, CHAIN_ID_SOLANA } from "@certusone/wormhole-sdk";
 import { Controller } from "./controller";
 import { DeliveryContext, delivery } from "./middleware";
 import { programId } from "./solana";
@@ -21,11 +20,12 @@ export type HermesRelayerContext = StandardRelayerContext & DeliveryContext;
     }
   );
   app.use(delivery());
+
   const controller = new Controller();
   app.multiple(
     {
-      [CHAIN_ID_SOLANA]: programId,
-      [CHAIN_ID_FANTOM]: address,
+      [1]: programId,
+      [10]: address,
     },
     controller.redeemVaa
   );

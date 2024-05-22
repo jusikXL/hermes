@@ -9,17 +9,12 @@ export class Controller {
     const vaa = ctx.vaa;
 
     if (vaa) {
-      const vaaBytes = vaa.bytes;
-      const vaaHex: `0x${string}` = `0x${Buffer.from(vaaBytes).toString(
-        "hex"
-      )}`;
-
       switch (vaa.emitterChain) {
         case CHAIN_ID_SOLANA:
-          await ctx.deliver(deliverToEvm, vaaHex);
+          await ctx.deliver(deliverToEvm);
           break;
         case CHAIN_ID_FANTOM:
-          await ctx.deliver(deliverToSolana, vaaBytes);
+          await ctx.deliver(deliverToSolana);
           break;
       }
     }
