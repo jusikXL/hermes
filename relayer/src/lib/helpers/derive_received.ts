@@ -1,13 +1,13 @@
 import { PublicKey } from "@solana/web3.js";
-import { ChainId } from "@certusone/wormhole-sdk";
-import { deriveAddress } from "@certusone/wormhole-sdk/lib/cjs/solana";
+import { ChainId } from "@wormhole-foundation/sdk";
+import sdk from "@wormhole-foundation/sdk-solana";
 
 export default function deriveReceivedKey(
   programId: PublicKey,
   chain: ChainId,
   sequence: bigint
 ) {
-  return deriveAddress(
+  return sdk.utils.deriveAddress(
     [
       Buffer.from("received"),
       (() => {

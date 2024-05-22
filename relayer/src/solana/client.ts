@@ -3,7 +3,7 @@ import { clusterApiUrl, Connection, Keypair } from "@solana/web3.js";
 import { getFromEnvironment } from "../lib/helpers";
 import { idl, programId } from ".";
 
-const secretKey = Uint8Array.from(
+export const secretKey = Uint8Array.from(
   JSON.parse(getFromEnvironment("SOLANA_SECRET_KEY"))
 );
 export const wallet = new anchor.Wallet(Keypair.fromSecretKey(secretKey));

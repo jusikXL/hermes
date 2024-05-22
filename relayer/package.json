@@ -4,7 +4,7 @@
   "description": "Hermes Relayer",
   "main": "src/app.ts",
   "scripts": {
-    "start": "ts-node src/app.ts",
+    "start": "tsx src/app.ts",
     "spy": "docker run --platform=linux/amd64 -p 7073:7073 --entrypoint /guardiand ghcr.io/wormhole-foundation/guardiand:latest spy --nodeKey /node.key --spyRPC \"[::]:7073\" --env testnet",
     "redis": "docker run --rm -p 6379:6379 --name redis-docker -d redis"
   },
@@ -19,15 +19,16 @@
     "@coral-xyz/anchor": "^0.28.0",
     "@wagmi/cli": "^2.1.7",
     "@wormhole-foundation/relayer-engine": "^0.3.2",
-    "@wormhole-foundation/sdk": "^0.6.8",
+    "@wormhole-foundation/sdk": "0.7.0-beta.4",
+    "bs58": "^5.0.0",
     "dotenv": "^16.4.5",
-    "typescript": "^5.4.5",
     "viem": "^2.11.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.16",
     "@types/mocha": "^10.0.6",
     "chai": "^5.1.1",
-    "mocha": "^10.4.0"
+    "mocha": "^10.4.0",
+    "tsx": "^4.10.5"
   }
 }

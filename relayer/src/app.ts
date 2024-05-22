@@ -21,9 +21,7 @@ export type HermesRelayerContext = StandardRelayerContext & DeliveryContext;
     }
   );
   app.use(delivery());
-
   const controller = new Controller();
-
   app.multiple(
     {
       [CHAIN_ID_SOLANA]: programId,
@@ -31,6 +29,5 @@ export type HermesRelayerContext = StandardRelayerContext & DeliveryContext;
     },
     controller.redeemVaa
   );
-
   await app.listen();
 })();
