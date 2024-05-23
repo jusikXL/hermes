@@ -99,12 +99,12 @@ pub struct CreateOffer<'info> {
     pub source_token: Account<'info, Mint>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = seller,
         seeds=[Escrow::SEED_PREFIX, source_token.key().as_ref()],
         bump,
         token::mint=source_token,
-        token::authority=offer
+        token::authority=config
     )]
     /// Escrow token account.
     pub escrow: Account<'info, TokenAccount>,
