@@ -5,7 +5,7 @@ use wormhole_anchor_sdk::wormhole;
 pub use super::send_message_context::SEED_PREFIX_SENT;
 use crate::{
     errors::OtcMarketError,
-    state::{Config, ForeignEmitter, Offer, WormholeEmitter},
+    state::{Config, ForeignEmitter, Offer, WormholeEmitter, Escrow},
 };
 
 #[derive(Accounts)]
@@ -84,7 +84,11 @@ pub struct CreateOffer<'info> {
     /// Read-only.
     pub foreign_emitter: Account<'info, ForeignEmitter>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint=seller_ata.owner == seller.key(),
+        constraint=seller_ata.mint == source_token.key()
+    )]
     /// Seller's source token account
     /// We transfer `source_token_amount` from this account to escrow.
     pub seller_ata: Account<'info, TokenAccount>,
@@ -94,7 +98,14 @@ pub struct CreateOffer<'info> {
     /// Used to carry `transfer_checked`.
     pub source_token: Account<'info, Mint>,
 
-    #[account(mut)]
+    #[account(
+        init,
+        payer = seller,
+        seeds=[Escrow::SEED_PREFIX, source_token.key().as_ref()],
+        bump,
+        token::mint=source_token,
+        token::authority=offer
+    )]
     /// Escrow token account.
     pub escrow: Account<'info, TokenAccount>,
 
@@ -107,8 +118,8 @@ pub struct CreateOffer<'info> {
             &Offer::CHAIN_ID.to_le_bytes(), // source chain
             &target_chain.to_le_bytes(), // target chain
             &source_token.key().as_ref(), // source token address ❓
-            &target_token_address, // target token address ❓
-            &exchange_rate.to_le_bytes() // exchange rate
+     //      &target_token_address, // target token address ❓
+     //      &exchange_rate.to_le_bytes() // exchange rate
         ],
         bump,
         space = Offer::MAXIMUM_SIZE
