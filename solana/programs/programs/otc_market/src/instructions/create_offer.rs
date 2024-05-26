@@ -4,7 +4,7 @@ use wormhole_anchor_sdk::wormhole;
 
 use crate::{
     context::create_offer_context::*, errors::OtcMarketError, events::OfferCreated,
-    message::OtcMarketMessage, state::offer::*,
+    message::OtcMarketMessage, message::OfferCreatedMessage, state::offer::*,
 };
 
 pub fn create_offer(
@@ -100,7 +100,8 @@ pub fn create_offer(
     let wormhole_emitter = &ctx.accounts.wormhole_emitter;
     let config = &ctx.accounts.config;
 
-    let payload: Vec<u8> = OtcMarketMessage::OfferCreated {
+    let payload: Vec<u8> = OtcMarketMessage::OfferCreated(OfferCreatedMessage {
+        offer_id: ctx.accounts.offer.key(),
         seller_source_address,
         seller_target_address,
         source_chain,
@@ -109,7 +110,7 @@ pub fn create_offer(
         target_token_address,
         source_token_amount,
         exchange_rate,
-    }
+    })
     .try_to_vec()?;
 
     wormhole::post_message(
