@@ -46,4 +46,10 @@ pub enum OtcMarketError {
     #[msg("InsufficientRate")]
     /// Too small rate.
     InsufficientRate,
+
+    #[msg("InvalidChain")]
+    InvalidChain,
+
+    #[msg("InvalidOffer")]
+    InvalidOffer,
 }

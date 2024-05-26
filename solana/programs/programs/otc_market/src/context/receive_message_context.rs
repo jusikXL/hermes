@@ -4,7 +4,7 @@ use wormhole_anchor_sdk::wormhole;
 use crate::{
     errors::OtcMarketError,
     message::OtcMarketMessage,
-    state::{Config, ForeignEmitter, Received},
+    state::{ForeignEmitter, Offer},
 };
 
 #[derive(Accounts)]
@@ -13,14 +13,6 @@ pub struct ReceiveMessage<'info> {
     #[account(mut)]
     /// Payer will initialize an account that tracks his own message IDs.
     pub payer: Signer<'info>,
-
-    #[account(
-        seeds = [Config::SEED_PREFIX],
-        bump,
-    )]
-    /// Config account. Wormhole PDAs specified in the config are checked
-    /// against the Wormhole accounts in this context. Read-only.
-    pub config: Account<'info, Config>,
 
     // Wormhole program.
     pub wormhole_program: Program<'info, wormhole::program::Wormhole>,
@@ -53,19 +45,9 @@ pub struct ReceiveMessage<'info> {
     #[account(
         init,
         payer = payer,
-        seeds = [
-            Received::SEED_PREFIX,
-            &posted.emitter_chain().to_le_bytes()[..],
-            &posted.sequence().to_le_bytes()[..]
-        ],
-        bump,
-        space = Received::MAXIMUM_SIZE
+        space = Offer::MAXIMUM_SIZE
     )]
-    /// Received account. [`receive_message`](crate::receive_message) will
-    /// deserialize the Wormhole message's payload and save it to this account.
-    /// This account cannot be overwritten, and will prevent Wormhole message
-    /// replay with the same sequence.
-    pub received: Account<'info, Received>,
+    pub offer: Account<'info, Offer>,
 
     /// System program.
     pub system_program: Program<'info, System>,
