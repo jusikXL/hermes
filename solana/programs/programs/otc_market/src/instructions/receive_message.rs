@@ -17,12 +17,57 @@ use crate::{
 pub fn receive_message(ctx: Context<ReceiveMessage>, vaa_hash: [u8; 32]) -> Result<()> {
     let posted_message = &ctx.accounts.posted;
 
-    if let OtcMarketMessage::Hello { message } = posted_message.data() {
+
+    // checks
+
+    if let OtcMarketMessage::CreateOffer { 
+        seller_source_address, 
+        seller_target_address, 
+        source_chain, 
+        target_chain, 
+        source_token_address, 
+        target_token_address, 
+        source_token_amount, 
+        exchange_rate
+    } = posted_message.data() {
         // OtcMarketMessage cannot be larger than the maximum size of the account.
+
         require!(
-            message.len() <= MESSAGE_MAX_LENGTH,
-            OtcMarketError::InvalidMessage,
+            target_chain == Offer::CHAIN_ID,
+            OtcMarketError::InvalidChain,
         );
+
+
+        {
+            let message = OtcMarketMessage::OfferCreated::try_from_slice(&offer_payload)?;
+            let offer = &mut ctx.accounts.offer;
+    
+            // Set offer related params.
+            offer.bump = *ctx.bumps.get("offer").ok_or(OtcMarketError::BumpNotFound)?;
+            offer.seller_source_address = message.seller_source_address;
+            offer.seller_target_address = message.seller_target_address;
+            offer.source_chain = message.source_chain;
+            offer.target_chain = message.target_chain;
+            offer.source_token_address = message.source_token_address;
+            offer.target_token_address = message.target_token_address;
+            offer.source_token_amount = message.source_token_amount;
+            offer.exchange_rate = message.exchange_rate;
+            // TODO: can be refactored ❓
+        }
+    
+    
+        // Emit event.
+        emit!(OfferCreated {
+            offer_id: ctx.accounts.offer.key(),
+            ctx.accounts.offer.seller_source_address,
+            ctx.accounts.offer.seller_target_address,
+            ctx.accounts.offer.source_chain,
+            ctx.accounts.offer.target_chain,
+            ctx.accounts.offer.source_token_address,
+            ctx.accounts.offer.target_token_address,
+            ctx.accounts.offer.source_token_amount,
+            ctx.accounts.offer.exchange_rate,
+        });
 
         // Save batch ID, keccak256 hash and message payload.
         let received = &mut ctx.accounts.received;
