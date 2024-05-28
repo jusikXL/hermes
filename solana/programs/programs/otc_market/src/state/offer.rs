@@ -21,7 +21,7 @@ impl Offer {
     pub const MINIMUM_AMOUNT: u64 = u64::pow(10, 12);
     pub const MINIMUM_RATE: u64 = u64::pow(10, 8);
 
-    pub const MAXIMUM_SIZE: usize = 0
+    pub const MAXIMUM_SIZE: usize = 8 //descriminator
         + 1 // bump 
         + 32 // seller_source_address
         + 32 // seller_target_address
@@ -46,7 +46,8 @@ pub mod test {
     fn test_offer() -> Result<()> {
         assert_eq!(
             Offer::MAXIMUM_SIZE,
-            size_of::<u8>()
+            size_of::<u64>() //descriminator
+                + size_of::<u8>() //bump
                 + size_of::<[u8; 32]>()
                 + size_of::<[u8; 32]>()
                 + size_of::<u16>()
