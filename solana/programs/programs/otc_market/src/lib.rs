@@ -72,8 +72,19 @@ pub mod otc_market {
         instructions::accept_offer::accept_offer(ctx, source_token_amount, decimals)
     }
 
-    /// See [receive_message].
-    pub fn receive_message(ctx: Context<ReceiveMessage>, vaa_hash: [u8; 32]) -> Result<()> {
-        instructions::receive_message::receive_message(ctx, vaa_hash)
+    /// See [receive_create_offer].
+    pub fn receive_create_offer(
+        ctx: Context<ReceiveCreateOffer>,
+        vaa_hash: [u8; 32],
+    ) -> Result<()> {
+        instructions::receive_create_offer::receive_create_offer(ctx, vaa_hash)
+    }
+
+    /// See [receive_accept_offer]
+    pub fn receive_accept_offer(
+        ctx: Context<ReceiveAcceptOffer>,
+        vaa_hash: [u8; 32],
+    ) -> Result<()> {
+        instructions::receive_accept_offer::receive_accept_offer(ctx, vaa_hash)
     }
 }

@@ -16,8 +16,8 @@ pub fn accept_offer(
     source_token_amount: u64,
     decimals: u8,
 ) -> Result<()> {
-    // Validate offer params.
     {
+        //Validate offer params.
         // 1. Should fail if payment for msg fee failed.
         let fee = ctx.accounts.wormhole_bridge.fee();
         if fee > 0 {
@@ -64,13 +64,15 @@ pub fn accept_offer(
     let offer = &mut ctx.accounts.offer;
     let buyer = &mut ctx.accounts.buyer;
 
-    let ether = 10_u128.pow(u32::try_from(decimals).unwrap());
-    let target_token_amount: u64 = u64::try_from(
-        u128::try_from(source_token_amount).unwrap() * u128::try_from(offer.exchange_rate).unwrap()
-            / ether,
-    )
-    .unwrap();
-    let fee: u64 = target_token_amount / 100; // 1%
+    let target_token_amount = Box::new(
+        u64::try_from(
+            u128::try_from(source_token_amount).unwrap()
+                * u128::try_from(offer.exchange_rate).unwrap()
+                / 10_u128.pow(u32::try_from(decimals).unwrap()),
+        )
+        .unwrap(),
+    );
+    let fee = Box::new(*target_token_amount / 100); // 1%
 
     offer.source_token_amount -= source_token_amount;
 
@@ -85,36 +87,35 @@ pub fn accept_offer(
             from: ctx.accounts.buyer_ata.to_account_info(),
             mint: ctx.accounts.target_token.to_account_info(),
             to: ctx.accounts.escrow.to_account_info(),
-            authority: ctx.accounts.buyer.to_account_info(),
+            authority: buyer.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
 
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        transfer_checked(cpi_ctx, fee, decimals)?;
+        transfer_checked(cpi_ctx, *fee, decimals)?;
     }
-
-    // Transfer target tocken
+    //Transfer target tocken
     {
         let cpi_accounts = TransferChecked {
             from: ctx.accounts.buyer_ata.to_account_info(),
             mint: ctx.accounts.target_token.to_account_info(),
             to: ctx.accounts.seller_ata.to_account_info(),
-            authority: ctx.accounts.buyer.to_account_info(),
+            authority: buyer.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
 
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        transfer_checked(cpi_ctx, target_token_amount - fee, decimals)?;
+        transfer_checked(cpi_ctx, *target_token_amount - *fee, decimals)?;
     }
 
-    // Sending cross chain message
+    //Sending cross chain message
 
     let wormhole_emitter = &ctx.accounts.wormhole_emitter;
     let config = &ctx.accounts.config;
 
     let payload: Vec<u8> = OtcMarketMessage::OfferAccepted(OfferAcceptedMessage {
-        offer_id: ctx.accounts.offer.key(),
-        buyer_ata: ctx.accounts.buyer.key(),
+        offer_id: offer.key(),
+        buyer_ata: buyer.key(),
         source_token_amount: source_token_amount,
     })
     .try_to_vec()?;
@@ -127,7 +128,7 @@ pub fn accept_offer(
                 message: ctx.accounts.wormhole_message.to_account_info(),
                 emitter: wormhole_emitter.to_account_info(),
                 sequence: ctx.accounts.wormhole_sequence.to_account_info(),
-                payer: ctx.accounts.buyer.to_account_info(),
+                payer: buyer.to_account_info(),
                 fee_collector: ctx.accounts.wormhole_fee_collector.to_account_info(),
                 clock: ctx.accounts.clock.to_account_info(),
                 rent: ctx.accounts.rent.to_account_info(),
@@ -150,6 +151,12 @@ pub fn accept_offer(
         payload,
         config.finality.try_into().unwrap(),
     )?;
+
+    emit!(OfferAccepted {
+        offer_id: offer.key(),
+        buyer: buyer.key(),
+        source_token_amount: source_token_amount
+    });
 
     Ok(())
 }

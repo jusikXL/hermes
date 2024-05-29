@@ -64,4 +64,8 @@ pub enum OtcMarketError {
     #[msg("InvalidSellerAta")]
     // Provided seller_ata does not match with one in offer
     InvalidSellerAta,
+
+    #[msg("InvalidBuyerAta")]
+    // Provided buyer_ata does not match with one in offer
+    InvalidBuyerAta,
 }

@@ -98,13 +98,6 @@ pub struct AcceptOffer<'info> {
     /// We transfer `target_token_amount` from this account to seller and escrow (fee).
     pub buyer_ata: Account<'info, TokenAccount>,
 
-    #[account(mut)]
-    /// Seller's target token account
-    /// We transfer `target_token_amount - fee` from buyer_ata to seller_ata.
-    ///
-    /// ❗Needs verification❗
-    pub seller_ata: Account<'info, TokenAccount>,
-
     #[account(
         init_if_needed,
         payer = buyer,
@@ -121,6 +114,16 @@ pub struct AcceptOffer<'info> {
     ///
     /// ❓❗Needs verification❗❓
     pub offer: Account<'info, Offer>,
+
+    #[account(
+        mut,
+        constraint=seller_ata.key() == Pubkey::new_from_array(offer.seller_target_address)
+    )]
+    /// Seller's target token account
+    /// We transfer `target_token_amount - fee` from buyer_ata to seller_ata.   
+    ///
+    /// ❗Needs verification❗
+    pub seller_ata: Account<'info, TokenAccount>,
 
     /// Token program.
     pub token_program: Program<'info, Token>,
