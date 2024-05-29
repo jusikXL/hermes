@@ -9,7 +9,7 @@ use crate::{
 
 #[derive(Accounts)]
 #[instruction(vaa_hash: [u8; 32])]
-pub struct ReceiveMessage<'info> {
+pub struct ReceiveCreateOffer<'info> {
     #[account(mut)]
     /// Payer will initialize an account that tracks his own message IDs.
     pub payer: Signer<'info>,

@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    context::receive_message_context::*, errors::OtcMarketError, events::OfferCreated,
-    message::OtcMarketMessage, message::OfferCreatedMessage, state::offer::Offer,
+    context::receive_create_offer_context::*, errors::OtcMarketError, events::OfferCreated,
+    message::OfferCreatedMessage, message::OtcMarketMessage, state::offer::Offer,
 };
 
 /// This instruction reads a posted verified Wormhole message and verifies
@@ -14,7 +14,7 @@ use crate::{
 /// # Arguments
 ///
 /// * `vaa_hash` - Keccak256 hash of verified Wormhole message
-pub fn receive_message(ctx: Context<ReceiveMessage>, _vaa_hash: [u8; 32]) -> Result<()> {
+pub fn receive_create_offer(ctx: Context<ReceiveCreateOffer>, _vaa_hash: [u8; 32]) -> Result<()> {
     let posted_message = &ctx.accounts.posted;
 
     // check for invalid message order
