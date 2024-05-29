@@ -12,3 +12,10 @@ pub struct OfferCreated {
     pub source_token_amount: u64,
     pub exchange_rate: u64,
 }
+
+#[event]
+pub struct OfferAccepted {
+    pub offer_id: Pubkey,
+    pub buyer: Pubkey,
+    pub source_token_amount: u64,
+}

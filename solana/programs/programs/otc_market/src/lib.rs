@@ -10,7 +10,7 @@ pub mod instructions;
 pub mod message;
 pub mod state;
 
-declare_id!("55YVdBZi251g3gMtWVs4Mohmq7bgsypKpSycHrFH56wX");
+declare_id!("n44B2i7iW7txBg3JqHrJPaeiF83b2jk95SHg28SutyW");
 
 #[program]
 /// # Hello World (Scaffolding Example #1)
@@ -61,6 +61,15 @@ pub mod otc_market {
             exchange_rate,
             decimals,
         )
+    }
+
+    /// See [accept_offer].
+    pub fn accept_offer(
+        ctx: Context<AcceptOffer>,
+        source_token_amount: u64,
+        decimals: u8,
+    ) -> Result<()> {
+        instructions::accept_offer::accept_offer(ctx, source_token_amount, decimals)
     }
 
     /// See [receive_message].

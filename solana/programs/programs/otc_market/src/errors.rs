@@ -43,6 +43,10 @@ pub enum OtcMarketError {
     /// Too small amount.
     InsufficientAmount,
 
+    #[msg("ExcessiveAmount")]
+    /// Too large amount
+    ExcessiveAmount,
+
     #[msg("InsufficientRate")]
     /// Too small rate.
     InsufficientRate,
@@ -52,4 +56,12 @@ pub enum OtcMarketError {
 
     #[msg("InvalidOffer")]
     InvalidOffer,
+
+    #[msg("InvalidTargetToken")]
+    // Provided target_token does not match with one in offer
+    InvalidTargetToken,
+
+    #[msg("InvalidSellerAta")]
+    // Provided seller_ata does not match with one in offer
+    InvalidSellerAta,
 }
